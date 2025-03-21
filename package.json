@@ -1,0 +1,23 @@
+{
+  "name": "nodejs",
+   "version": "1.0.0",
+  "description": "simple pairing code example",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@types/node": "^18.0.6",
+    "@whiskeysockets/baileys": "^6.7.16",
+    "axios": "^1.8.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "http": "^0.0.1-security",
+    "node-fetch": "^3.3.2",
+    "pastebin-js": "^1.0.6",
+    "pino": "^9.6.0",
+    "socket.io": "^4.8.1"
+  }
+}
