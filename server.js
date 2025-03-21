@@ -1,344 +1,319 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const fetch = require('node-fetch'); // Pastikan node-fetch terinstall: npm install node-fetch
+const fetch = require('node-fetch');
+const bcrypt = require('bcrypt'); // For password hashing
+const session = require('express-session'); // For session management
+const bodyParser = require('body-parser');
+
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "*", // GANTI dengan URL frontend saat production!
+        origin: "*", // Change to your frontend URL in production!
         methods: ["GET", "POST"]
     }
 });
 
 const PORT = process.env.PORT || 3001;
 
-let rooms = {};          // Menyimpan data room
-let users = {};          // Menyimpan data user
-let sessions = {};       // Menyimpan session login
-let triviaApiTokens = {}; // Menyimpan token Open Trivia DB per room
+// --- Middleware ---
+
+// Session middleware
+app.use(session({
+    secret: 'wanzofc', //  Change this to a strong, random secret!
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Set to true if using HTTPS, *very important* for production.
+}));
+
+// Body parser middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+// --- User and Room Data (In-memory for simplicity) ---
+// IN A REAL APP, USE A DATABASE (PostgreSQL, MongoDB, etc.)
+let users = {}; // { userId: { username, hashedPassword, ... }, ... }
+let rooms = {};
 
 
-// Fungsi untuk membuat ID room yang unik
+
 function generateRoomId() {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
 }
 
-// --- Fungsi untuk mendapatkan token sesi dari Open Trivia DB ---
-async function getTriviaApiToken() {
-    try {
-        const response = await fetch('https://opentdb.com/api_token.php?command=request');
-        const data = await response.json();
-        if (data.response_code === 0) {
-            return data.token;
-        } else {
-            console.error("Error requesting token:", data); // Log error
-            return null; // Kembalikan null jika gagal
-        }
-    } catch (error) {
-        console.error("Error requesting token (network error):", error); // Log error
-        return null; // Kembalikan null jika gagal (masalah jaringan)
-    }
-}
+async function fetchQuestions(amount = 10, category = null, difficulty = null, type = null) {
+    let url = `https://opentdb.com/api.php?amount=${amount}`;
+    if (category) url += `&category=${category}`;
+    if (difficulty) url += `&difficulty=${difficulty}`;
+    if (type) url += `&type=${type}`;
 
-// --- Fungsi untuk mengambil satu pertanyaan dari Open Trivia DB ---
-async function fetchSingleQuestion(token) {
-    const url = `https://opentdb.com/api.php?amount=1&type=multiple&token=${token}`;
     try {
         const response = await fetch(url);
         const data = await response.json();
 
         if (data.response_code === 0) {
-            const questionData = data.results[0];
-            const answers = [...questionData.incorrect_answers, questionData.correct_answer];
+            return data.results.map(item => {
+                const answers = [...item.incorrect_answers, item.correct_answer];
+                answers.sort(() => Math.random() - 0.5);
+                const correctIndex = answers.indexOf(item.correct_answer);
 
-            // Acak urutan jawaban
-            for (let i = answers.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [answers[i], answers[j]] = [answers[j], answers[i]];
-            }
-
-            const correctIndex = answers.indexOf(questionData.correct_answer);
-
-            return {
-                question: questionData.question,
-                answers: answers,
-                correct: correctIndex
-            };
-        } else if (data.response_code === 1 || data.response_code === 2) {
-           //Token habis/tidak ada pertanyaan
-           console.log("Token expired/no questions.  Requesting new token."); // Log info
-           return null;
-
-        }else {
-            console.error("Error fetching question from Open Trivia DB:", data); // Log error
-            return null;
+                return {
+                    question: item.question,
+                    answers: answers,
+                    correct: correctIndex
+                };
+            });
+        } else {
+            console.error("Error fetching questions from OTDB:", data.response_code);
+            return [];
         }
     } catch (error) {
-        console.error("Error fetching question (network error):", error);  // Log error
-        return null;
+        console.error("Error fetching questions:", error);
+        return [];
     }
 }
 
-// --- Fungsi untuk mengambil sejumlah pertanyaan dengan retry ---
-async function fetchQuestions(amount = 10, roomId) {
-    let token = triviaApiTokens[roomId];
-    if (!token) {
-        console.log("No token for room", roomId, ".  Getting a new one."); // Log info
-        token = await getTriviaApiToken();
-        if (!token) {
-            console.error("Failed to get API token.  Cannot fetch questions."); // Log error
-            return []; // Gagal mendapatkan token
-        }
-        triviaApiTokens[roomId] = token;
+// --- Serve static files (HTML, CSS, JS client) ---
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
+// --- Authentication API Endpoints ---
+
+// Registration
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.json({ success: false, message: 'Username and password are required.' });
+    }
+    if (Object.values(users).find(u => u.username === username)) { // Check for duplicate username
+        return res.status(400).json({ success: false, message: 'Username already exists.'});
     }
 
-    const questions = [];
-    let retries = 3; // Coba ambil pertanyaan hingga 3 kali
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
+        const userId = Date.now().toString(); // Generate a unique user ID (in a real app, use UUIDs)
+        users[userId] = { username, hashedPassword };
 
-    for (let i = 0; i < amount; i++) {
-        let question = null;
-        for (let attempt = 0; attempt < retries; attempt++) {
-             console.log(`Fetching question ${i + 1} for room ${roomId}, attempt ${attempt + 1}`);
-            question = await fetchSingleQuestion(token);
-            if (question) {
-                 console.log(`Successfully fetched question ${i + 1} for room ${roomId}`);
-                break; // Berhasil ambil pertanyaan, keluar dari loop retry
-            }
+        // Automatically log the user in after registration
+        req.session.userId = userId;
+        req.session.username = username;
+        return res.json({ success: true, message: 'Registration successful.' });
 
-            //Jika token habis reset.
-            if(question === null){
-                 token = await getTriviaApiToken();
-                if (!token) {
-                     console.log("Failed get API Token");
-                    return []; // Gagal mendapatkan token
-                }
-                triviaApiTokens[roomId] = token; // Simpan token
-            }
+    } catch (error) {
+        console.error("Registration error:", error);
+        return res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+});
 
-            // Tunggu sebentar sebelum mencoba lagi
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Tunggu 1 detik
-        }
+// Login
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
 
-        if (question) {
-            questions.push(question);
+    if (!username || !password) {
+        return res.json({ success: false, message: 'Username and password are required.' });
+    }
+
+    const user = Object.values(users).find(u => u.username === username);
+
+    if (!user) {
+        return res.json({ success: false, message: 'Invalid username or password.' });
+    }
+
+    try {
+        const match = await bcrypt.compare(password, user.hashedPassword);
+        if (match) {
+            // Passwords match, create a session
+            req.session.userId = Object.keys(users).find(key => users[key] === user); //Store User Id.
+            req.session.username = username; // Store the username in the session
+            return res.json({ success: true, message: 'Login successful.' });
         } else {
-            console.error("Failed to fetch question after multiple retries."); // Log error
-            return []; // Kembalikan array kosong
+            return res.json({ success: false, message: 'Invalid username or password.' });
         }
+    } catch (error) {
+        console.error("Login error:", error);
+        return res.status(500).json({ success: false, message: 'Internal server error.' });
     }
-    return questions;
-}
+});
+
+// Logout
+app.post('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            console.error("Logout error:", err);
+            return res.status(500).json({ success: false, message: 'Logout failed.' });
+        }
+        return res.json({ success: true, message: 'Logged out successfully.' });
+    });
+});
+
+// Check Authentication Status
+app.get('/check-auth', (req, res) => {
+    if (req.session.userId) {
+        return res.json({ isAuthenticated: true, username: req.session.username });
+    } else {
+        return res.json({ isAuthenticated: false });
+    }
+});
 
 
-// --- Routing (hanya untuk file statis) ---
-app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
-
-
-// --- Socket.IO Event Handling ---
+// --- Socket.IO Connection ---
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+    let session = socket.request.session;
 
-    // --- Login ---
-    socket.on('login', async (username, password, callback) => {
-        if (users[username] && users[username].password === password) {
-            sessions[socket.id] = username;
-            callback({ success: true, username: username });
-            emitRoomList(); // Update room list
-        } else {
-            callback({ success: false, message: 'Invalid username or password.' });
-        }
-    });
-
-    // --- Register ---
-    socket.on('register', (username, password, callback) => {
-        if (users[username]) {
-            callback({ success: false, message: 'Username already taken.' });
-            return;
-        }
-        if (!password || password.length < 4) {
-            callback({ success: false, message: 'Password must be at least 4 characters.' });
-            return;
-        }
-        users[username] = { password: password };
-        callback({ success: true });
-    });
-
-    // --- Logout ---
-    socket.on('logout', () => {
-        delete sessions[socket.id];
-         emitRoomList(); // Update room list
-    });
-
-    // --- Cek Sesi ---
-    socket.on('checkSession', (callback) => {
-        const username = sessions[socket.id];
-        if (username) {
-            callback({ loggedIn: true, username: username });
-            emitRoomList(); // Update room list
-        } else {
-            callback({ loggedIn: false });
-        }
-    });
-
-    // --- Create Room ---
+    // --- Socket.IO Event Handlers ---
     socket.on('createRoom', async (username, roomName, callback) => {
-        const roomId = generateRoomId();
-        const questions = await fetchQuestions(10, roomId); // Ambil 10 pertanyaan
+
+        // Check if the user is authenticated
+        if (!session.userId) {
+          callback({ success: false, message: 'Not authenticated.' });
+            return;
+        }
+        const questions = await fetchQuestions(10, 9, "easy");  // Sesuaikan
 
         if (questions.length > 0) {
+            const roomId = generateRoomId();
             rooms[roomId] = {
-                users: { [socket.id]: { username, score: 0 } },
+                users: { [socket.id]: { username: session.username, score: 0 } },  // Get username from session
                 questionIndex: 0,
                 questions: questions,
-                roomName: roomName || `Room ${roomId}`, // Nama room default
+                roomName: roomName || `Room ${roomId}`,
                 timer: null,
                 timeLeft: 60,
             };
-            users[socket.id] = { username, score: 0, roomId }; // Simpan roomId
+            // No need to store username separately in 'users', it's in the session.
             socket.join(roomId);
             callback({ success: true, roomId });
-            updateRoomInfo(roomId); // Update info room
-            startTimer(roomId);     // Mulai timer
-            emitRoomList();          // Update room list
+            updateRoomInfo(roomId);
+            startTimer(roomId);
         } else {
-            callback({ success: false, message: 'Failed to fetch questions.' }); // Kirim pesan error
+            callback({ success: false, message: 'Failed to fetch questions.' });
         }
     });
 
-    // --- Join Room ---
-    socket.on('joinRoom', (roomId, callback) => {
-        const username = sessions[socket.id];
-
-        if (!username) {
-          callback({success: false, message:"User not logged in."});
-          return;
+    socket.on('joinRoom', (roomId, username, callback) => {
+         // Check authentication
+        if (!session.userId) {
+            callback({ success: false, message: 'Not authenticated.' });
+            return;
         }
+
         if (rooms[roomId]) {
             if (Object.keys(rooms[roomId].users).length >= 4) {
                 callback({ success: false, message: 'Room is full.' });
                 return;
             }
-            // Cek username duplikat
-            for (const userId in rooms[roomId].users) {
-                if (rooms[roomId].users[userId].username === username) {
-                    callback({ success: false, message: 'Username already taken in this room.' });
-                    return;
-                }
+              // Check for duplicate usernames in the room
+            const existingUsernames = Object.values(rooms[roomId].users).map(u => u.username);
+            if (existingUsernames.includes(session.username)) {  // Check against session username
+                return callback({ success: false, message: 'Username already taken in this room.' });
             }
 
-            rooms[roomId].users[socket.id] = { username, score: 0 };
-            users[socket.id] = { username, score: 0, roomId }; // Simpan roomId
+            rooms[roomId].users[socket.id] = { username: session.username, score: 0 }; // Use session username
+
             socket.join(roomId);
             callback({ success: true, questions: rooms[roomId].questions });
-            updateRoomInfo(roomId); // Update info room
-            io.to(roomId).emit('userJoined', username); // Notifikasi
+            updateRoomInfo(roomId);
         } else {
             callback({ success: false, message: 'Room not found.' });
         }
     });
 
-    // --- Jawab Pertanyaan ---
     socket.on('answerQuestion', (answerIndex, callback) => {
-         const user = users[socket.id];
-        if (!user || !rooms[user.roomId]) {
-            callback({success: false, message: "Error answer."});
-            return;
+         // No need to check authentication here, user must be in a room to answer
+        const user = rooms[currentRoomId]?.users[socket.id];
+        if (!user) {
+            // This shouldn't happen if the user is properly managed
+            return callback({success: false, message: "Error: User not found in room."});
         }
 
-        const room = rooms[user.roomId];
+        const room = rooms[currentRoomId];
         const currentQuestionIndex = room.questionIndex;
         const currentQuestion = room.questions[currentQuestionIndex];
 
         if (answerIndex === currentQuestion.correct) {
-            rooms[user.roomId].users[socket.id].score += 10; // Tambah skor di room
-             users[socket.id].score += 10; // Tambah skor di user (global)
-            callback({ success: true, correct: true, score: users[socket.id].score });
+            room.users[socket.id].score += 10;
+            callback({ success: true, correct: true, score:  room.users[socket.id].score });
         } else {
-             callback({ success: true, correct: false, score: users[socket.id].score });
+            callback({ success: true, correct: false, score:  room.users[socket.id].score });
         }
+
     });
 
-    // --- Restart Game (hanya host) ---
     socket.on('restartGame', async () => {
-        const user = users[socket.id];
-        if (!user || !rooms[user.roomId]) return;
+        const user = rooms[currentRoomId]?.users[socket.id];
+        if (!user) return;
+        const room = rooms[currentRoomId];
 
-        const room = rooms[user.roomId];
-        const hostSocketId = Object.keys(room.users)[0]; // Host adalah user pertama
-        if (socket.id !== hostSocketId) return; // Cek apakah user adalah host
+        const hostSocketId = Object.keys(room.users)[0];
+        if (socket.id !== hostSocketId) return;
 
-        const newQuestions = await fetchQuestions(10, user.roomId);  //Ambil soal baru
+        const newQuestions = await fetchQuestions(10, 9, "easy"); // Sesuaikan
         if (newQuestions.length === 0) {
-          io.to(user.roomId).emit('error', 'Failed to fetch questions for restart.');
+          io.to(currentRoomId).emit('error', 'Failed to fetch questions for restart.');
           return;
         }
 
         room.questionIndex = 0;
         room.questions = newQuestions;
-        room.timeLeft = 60;
+        room.timeLeft = 60; // Reset timer
 
-        // Reset skor semua pemain
         for (const userId in room.users) {
             room.users[userId].score = 0;
-            users[userId].score = 0; // Reset skor user (global)
         }
 
-        clearTimeout(room.timer); // Hentikan timer
-        startTimer(user.roomId);  // Mulai timer baru
-        updateRoomInfo(user.roomId); // Update info room
-        io.to(user.roomId).emit('gameRestarted', room.questions[0]); // Kirim pertanyaan pertama
+                clearTimeout(room.timer);
+        startTimer(currentRoomId);
+        updateRoomInfo(currentRoomId);
+        io.to(currentRoomId).emit('gameRestarted', room.questions[0]);
     });
 
-
-    // --- Logout ---
-    socket.on('logout', () => {
-        const username = sessions[socket.id];
-        delete sessions[socket.id];
-         emitRoomList(); // Update room list
-        if(username){
-            io.emit("userLoggedOut", username); // Notifikasi
-        }
-
+    socket.on('leaveRoom', () => {
+        handleLeaveRoom(socket);
     });
 
-    // --- Disconnect ---
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         handleLeaveRoom(socket);
     });
 
-    // --- Fungsi untuk menangani user yang keluar dari room ---
-    function handleLeaveRoom(socket){
-         const user = users[socket.id];
-        if (user) {
-            const roomId = user.roomId;
-            if (rooms[roomId]) {
-                delete rooms[roomId].users[socket.id];
 
-                // Jika room kosong, hapus room dan token
-                if (Object.keys(rooms[roomId].users).length === 0) {
-                    delete rooms[roomId];
-                    delete triviaApiTokens[roomId]; // Hapus token API
-                } else {
-                     //Jika host yang keluar
-                    if (Object.keys(rooms[roomId].users)[0] === socket.id) {
-                         clearTimeout(rooms[roomId].timer);
-                     }
-                    updateRoomInfo(roomId); // Update info room
-                }
-                emitRoomList(); // Update daftar room
+    // --- Helper Functions ---
+
+    function handleLeaveRoom(socket) {
+        let currentRoomId = null;
+
+        // Find the room the user is in.  Iterate through rooms.
+        for (const roomId in rooms) {
+            if (rooms[roomId].users[socket.id]) {
+                currentRoomId = roomId;
+                break;
             }
-            delete users[socket.id];
-            socket.leave(roomId);
+        }
 
+        if (currentRoomId) {
+            const room = rooms[currentRoomId];
+            delete room.users[socket.id];
+
+            if (Object.keys(room.users).length === 0) {
+                // If the room is empty, delete it
+                delete rooms[currentRoomId];
+            } else {
+                // If the user leaving was the host, clear the timer.
+                if (Object.keys(room.users)[0] === socket.id) {
+                    clearTimeout(room.timer);
+                }
+                updateRoomInfo(currentRoomId); // Update room info for other users
+            }
+            socket.leave(currentRoomId);
         }
     }
 
-
-    // --- Fungsi untuk update informasi room ke semua client di room tersebut ---
-    function updateRoomInfo(roomId) {
+     function updateRoomInfo(roomId) {
         if (rooms[roomId]) {
             const userList = Object.values(rooms[roomId].users).map(user => ({
                 username: user.username,
@@ -350,14 +325,13 @@ io.on('connection', (socket) => {
                 roomName: rooms[roomId].roomName,
                 users: userList,
                 totalUsers: userList.length,
-                currentQuestionIndex: rooms[roomId].questionIndex + 1, // +1 agar lebih user-friendly
+                currentQuestionIndex: rooms[roomId].questionIndex + 1,
                 totalQuestions: rooms[roomId].questions.length,
                 timeLeft: rooms[roomId].timeLeft,
             });
         }
     }
 
-    // --- Fungsi untuk mendapatkan skor semua pemain di room ---
     function getRoomScores(roomId) {
         if (rooms[roomId]) {
             return Object.values(rooms[roomId].users).map(user => ({
@@ -368,56 +342,44 @@ io.on('connection', (socket) => {
         return [];
     }
 
-    // --- Fungsi untuk memulai timer ---
     function startTimer(roomId) {
         if (!rooms[roomId]) return;
 
-        rooms[roomId].timeLeft = 60; // Reset timer
-        updateRoomInfo(roomId); // Update info (termasuk timer)
+        rooms[roomId].timeLeft = 60;
+        updateRoomInfo(roomId);
 
         rooms[roomId].timer = setInterval(() => {
             if (!rooms[roomId]) {
-
-                return; // Room sudah dihapus
+                clearInterval(rooms[roomId].timer); // Clear interval if room is gone.
+                return;
             }
             rooms[roomId].timeLeft--;
-            updateRoomInfo(roomId); // Update info (termasuk timer)
+            updateRoomInfo(roomId);
 
             if (rooms[roomId].timeLeft <= 0) {
-                clearInterval(rooms[roomId].timer); // Hentikan timer
-                moveToNextQuestion(roomId);         // Pindah ke pertanyaan berikutnya
+                clearInterval(rooms[roomId].timer);
+                moveToNextQuestion(roomId);
             }
         }, 1000);
     }
 
-    // --- Fungsi untuk pindah ke pertanyaan berikutnya ---
+
     function moveToNextQuestion(roomId) {
         if (!rooms[roomId]) return;
 
         const room = rooms[roomId];
         if (room.questionIndex < room.questions.length - 1) {
             room.questionIndex++;
-            io.to(roomId).emit('nextQuestion', rooms[roomId].questions[room.questionIndex]);
-            startTimer(roomId); // Mulai timer lagi
+            io.to(roomId).emit('nextQuestion', room.questions[room.questionIndex]);
+            startTimer(roomId); // Restart the timer for the next question
+
         } else {
-            // Game selesai
+            // Game over
             io.to(roomId).emit('gameOver', getRoomScores(roomId));
         }
     }
+}); // Closing bracket for io.on('connection', ...)
 
-    // --- Fungsi untuk mengirim daftar room ke semua client ---
-    function emitRoomList() {
-        const roomList = Object.keys(rooms).map(roomId => ({
-            id: roomId,
-            name: rooms[roomId].roomName,
-            host: Object.values(rooms[roomId].users)[0].username,
-            numPlayers: Object.keys(rooms[roomId].users).length,
-        }));
-        io.emit('roomList', roomList);
-    }
-});
-
-// --- Start Server ---
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
