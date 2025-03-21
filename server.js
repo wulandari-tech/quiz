@@ -1,43 +1,22 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const fetch = require('node-fetch');
-const bcrypt = require('bcrypt'); // For password hashing
-const session = require('express-session'); // For session management
-const bodyParser = require('body-parser');
-
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "*", // Change to your frontend URL in production!
+        origin: "https://styles-production.up.railway.app", // GANTI dengan URL frontend Anda saat production!
         methods: ["GET", "POST"]
     }
 });
 
 const PORT = process.env.PORT || 3001;
 
-// --- Middleware ---
-
-// Session middleware
-app.use(session({
-    secret: 'wanzofc', //  Change this to a strong, random secret!
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false } // Set to true if using HTTPS, *very important* for production.
-}));
-
-// Body parser middleware
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
-// --- User and Room Data (In-memory for simplicity) ---
-// IN A REAL APP, USE A DATABASE (PostgreSQL, MongoDB, etc.)
-let users = {}; // { userId: { username, hashedPassword, ... }, ... }
 let rooms = {};
-
-
+let users = {};
 
 function generateRoomId() {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -80,112 +59,29 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-// --- Authentication API Endpoints ---
-
-// Registration
-app.post('/register', async (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.json({ success: false, message: 'Username and password are required.' });
-    }
-    if (Object.values(users).find(u => u.username === username)) { // Check for duplicate username
-        return res.status(400).json({ success: false, message: 'Username already exists.'});
-    }
-
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
-        const userId = Date.now().toString(); // Generate a unique user ID (in a real app, use UUIDs)
-        users[userId] = { username, hashedPassword };
-
-        // Automatically log the user in after registration
-        req.session.userId = userId;
-        req.session.username = username;
-        return res.json({ success: true, message: 'Registration successful.' });
-
-    } catch (error) {
-        console.error("Registration error:", error);
-        return res.status(500).json({ success: false, message: 'Internal server error.' });
-    }
-});
-
-// Login
-app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.json({ success: false, message: 'Username and password are required.' });
-    }
-
-    const user = Object.values(users).find(u => u.username === username);
-
-    if (!user) {
-        return res.json({ success: false, message: 'Invalid username or password.' });
-    }
-
-    try {
-        const match = await bcrypt.compare(password, user.hashedPassword);
-        if (match) {
-            // Passwords match, create a session
-            req.session.userId = Object.keys(users).find(key => users[key] === user); //Store User Id.
-            req.session.username = username; // Store the username in the session
-            return res.json({ success: true, message: 'Login successful.' });
-        } else {
-            return res.json({ success: false, message: 'Invalid username or password.' });
-        }
-    } catch (error) {
-        console.error("Login error:", error);
-        return res.status(500).json({ success: false, message: 'Internal server error.' });
-    }
-});
-
-// Logout
-app.post('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (err) {
-            console.error("Logout error:", err);
-            return res.status(500).json({ success: false, message: 'Logout failed.' });
-        }
-        return res.json({ success: true, message: 'Logged out successfully.' });
-    });
-});
-
-// Check Authentication Status
-app.get('/check-auth', (req, res) => {
-    if (req.session.userId) {
-        return res.json({ isAuthenticated: true, username: req.session.username });
-    } else {
-        return res.json({ isAuthenticated: false });
-    }
-});
-
-
-// --- Socket.IO Connection ---
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
-    let session = socket.request.session;
 
-    // --- Socket.IO Event Handlers ---
     socket.on('createRoom', async (username, roomName, callback) => {
-
-        // Check if the user is authenticated
-        if (!session.userId) {
-          callback({ success: false, message: 'Not authenticated.' });
+        // Validasi username (contoh sederhana)
+        if (!username || username.trim().length === 0) {
+            callback({ success: false, message: 'Invalid username.' });
             return;
         }
+
+        const roomId = generateRoomId();
         const questions = await fetchQuestions(10, 9, "easy");  // Sesuaikan
 
         if (questions.length > 0) {
-            const roomId = generateRoomId();
             rooms[roomId] = {
-                users: { [socket.id]: { username: session.username, score: 0 } },  // Get username from session
+                users: { [socket.id]: { username, score: 0 } },
                 questionIndex: 0,
                 questions: questions,
                 roomName: roomName || `Room ${roomId}`,
                 timer: null,
                 timeLeft: 60,
             };
-            // No need to store username separately in 'users', it's in the session.
+            users[socket.id] = { username, score: 0, roomId };
             socket.join(roomId);
             callback({ success: true, roomId });
             updateRoomInfo(roomId);
@@ -196,9 +92,9 @@ io.on('connection', (socket) => {
     });
 
     socket.on('joinRoom', (roomId, username, callback) => {
-         // Check authentication
-        if (!session.userId) {
-            callback({ success: false, message: 'Not authenticated.' });
+        // Validasi username
+        if (!username || username.trim().length === 0) {
+            callback({ success: false, message: 'Invalid username.' });
             return;
         }
 
@@ -207,14 +103,17 @@ io.on('connection', (socket) => {
                 callback({ success: false, message: 'Room is full.' });
                 return;
             }
-              // Check for duplicate usernames in the room
-            const existingUsernames = Object.values(rooms[roomId].users).map(u => u.username);
-            if (existingUsernames.includes(session.username)) {  // Check against session username
-                return callback({ success: false, message: 'Username already taken in this room.' });
+
+            // Cek username duplikat di room yang sama
+            for (const userId in rooms[roomId].users) {
+                if (rooms[roomId].users[userId].username === username) {
+                    callback({ success: false, message: 'Username already taken in this room.' });
+                    return;
+                }
             }
 
-            rooms[roomId].users[socket.id] = { username: session.username, score: 0 }; // Use session username
-
+            rooms[roomId].users[socket.id] = { username, score: 0 };
+            users[socket.id] = { username, score: 0, roomId };
             socket.join(roomId);
             callback({ success: true, questions: rooms[roomId].questions });
             updateRoomInfo(roomId);
@@ -224,37 +123,39 @@ io.on('connection', (socket) => {
     });
 
     socket.on('answerQuestion', (answerIndex, callback) => {
-         // No need to check authentication here, user must be in a room to answer
-        const user = rooms[currentRoomId]?.users[socket.id];
-        if (!user) {
-            // This shouldn't happen if the user is properly managed
-            return callback({success: false, message: "Error: User not found in room."});
+        const user = users[socket.id];
+        if (!user || !rooms[user.roomId]) {
+            callback({success: false, message: "Error answer"})
+            return;
         }
+        const room = rooms[user.roomId];
 
-        const room = rooms[currentRoomId];
         const currentQuestionIndex = room.questionIndex;
         const currentQuestion = room.questions[currentQuestionIndex];
 
         if (answerIndex === currentQuestion.correct) {
-            room.users[socket.id].score += 10;
-            callback({ success: true, correct: true, score:  room.users[socket.id].score });
-        } else {
-            callback({ success: true, correct: false, score:  room.users[socket.id].score });
-        }
+            rooms[user.roomId].users[socket.id].score += 10;
+            users[socket.id].score += 10; //Update juga di users.
+            callback({ success: true, correct: true, score: users[socket.id].score });
 
+        } else {
+             callback({ success: true, correct: false, score: users[socket.id].score });
+
+        }
+        // Jangan pindah ke pertanyaan berikutnya di sini; biarkan timer yang menangani
     });
 
     socket.on('restartGame', async () => {
-        const user = rooms[currentRoomId]?.users[socket.id];
-        if (!user) return;
-        const room = rooms[currentRoomId];
+        const user = users[socket.id];
+        if (!user || !rooms[user.roomId]) return;
+        const room = rooms[user.roomId];
 
         const hostSocketId = Object.keys(room.users)[0];
         if (socket.id !== hostSocketId) return;
 
         const newQuestions = await fetchQuestions(10, 9, "easy"); // Sesuaikan
         if (newQuestions.length === 0) {
-          io.to(currentRoomId).emit('error', 'Failed to fetch questions for restart.');
+          io.to(user.roomId).emit('error', 'Failed to fetch questions for restart.');
           return;
         }
 
@@ -264,12 +165,13 @@ io.on('connection', (socket) => {
 
         for (const userId in room.users) {
             room.users[userId].score = 0;
+             users[userId].score = 0;
         }
 
-                clearTimeout(room.timer);
-        startTimer(currentRoomId);
-        updateRoomInfo(currentRoomId);
-        io.to(currentRoomId).emit('gameRestarted', room.questions[0]);
+        clearTimeout(room.timer);
+        startTimer(user.roomId);
+        updateRoomInfo(user.roomId);
+        io.to(user.roomId).emit('gameRestarted', room.questions[0]);
     });
 
     socket.on('leaveRoom', () => {
@@ -281,39 +183,27 @@ io.on('connection', (socket) => {
         handleLeaveRoom(socket);
     });
 
-
-    // --- Helper Functions ---
-
-    function handleLeaveRoom(socket) {
-        let currentRoomId = null;
-
-        // Find the room the user is in.  Iterate through rooms.
-        for (const roomId in rooms) {
-            if (rooms[roomId].users[socket.id]) {
-                currentRoomId = roomId;
-                break;
-            }
-        }
-
-        if (currentRoomId) {
-            const room = rooms[currentRoomId];
-            delete room.users[socket.id];
-
-            if (Object.keys(room.users).length === 0) {
-                // If the room is empty, delete it
-                delete rooms[currentRoomId];
-            } else {
-                // If the user leaving was the host, clear the timer.
-                if (Object.keys(room.users)[0] === socket.id) {
-                    clearTimeout(room.timer);
+    function handleLeaveRoom(socket){
+         const user = users[socket.id];
+        if (user) {
+            const roomId = user.roomId;
+            if (rooms[roomId]) {
+                delete rooms[roomId].users[socket.id];
+                if (Object.keys(rooms[roomId].users).length === 0) {
+                    delete rooms[roomId];
+                } else {
+                    if (Object.keys(rooms[roomId].users)[0] === socket.id) {
+                         clearTimeout(rooms[roomId].timer);
+                    }
+                    updateRoomInfo(roomId);
                 }
-                updateRoomInfo(currentRoomId); // Update room info for other users
             }
-            socket.leave(currentRoomId);
+             delete users[socket.id];
+             socket.leave(roomId);
         }
     }
 
-     function updateRoomInfo(roomId) {
+    function updateRoomInfo(roomId) {
         if (rooms[roomId]) {
             const userList = Object.values(rooms[roomId].users).map(user => ({
                 username: user.username,
@@ -331,15 +221,14 @@ io.on('connection', (socket) => {
             });
         }
     }
-
-    function getRoomScores(roomId) {
-        if (rooms[roomId]) {
-            return Object.values(rooms[roomId].users).map(user => ({
+    function getRoomScores(roomId){
+         if(rooms[roomId]){
+             return Object.values(rooms[roomId].users).map(user => ({
                 username: user.username,
                 score: user.score
             }));
-        }
-        return [];
+         }
+         return [];
     }
 
     function startTimer(roomId) {
@@ -350,7 +239,6 @@ io.on('connection', (socket) => {
 
         rooms[roomId].timer = setInterval(() => {
             if (!rooms[roomId]) {
-                clearInterval(rooms[roomId].timer); // Clear interval if room is gone.
                 return;
             }
             rooms[roomId].timeLeft--;
@@ -363,22 +251,20 @@ io.on('connection', (socket) => {
         }, 1000);
     }
 
-
     function moveToNextQuestion(roomId) {
         if (!rooms[roomId]) return;
 
         const room = rooms[roomId];
-        if (room.questionIndex < room.questions.length - 1) {
-            room.questionIndex++;
-            io.to(roomId).emit('nextQuestion', room.questions[room.questionIndex]);
-            startTimer(roomId); // Restart the timer for the next question
+         if (room.questionIndex < room.questions.length - 1) {
+                rooms[roomId].questionIndex++;
+                io.to(roomId).emit('nextQuestion', rooms[roomId].questions[rooms[roomId].questionIndex]);
+                startTimer(roomId);
 
-        } else {
-            // Game over
-            io.to(roomId).emit('gameOver', getRoomScores(roomId));
-        }
+           } else {
+                io.to(roomId).emit('gameOver', getRoomScores(roomId));
+           }
     }
-}); // Closing bracket for io.on('connection', ...)
+});
 
 server.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
