@@ -9,11 +9,11 @@
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11">
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Font yang lebih modern */
             margin: 0;
             padding: 0;
-            background-color: #f0f2f5;
+            background-color: #f0f2f5; /* Warna latar belakang yang lebih lembut */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -22,38 +22,38 @@
 
         #app {
             background-color: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px; /* Padding lebih besar */
+            border-radius: 12px; /* Border radius yang lebih melengkung */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Box shadow yang lebih halus */
             width: 90%;
-            max-width: 650px;
-            text-align: center;
+            max-width: 650px; /* Max-width yang sedikit lebih besar */
+            text-align: center; /* Pusatkan semua konten */
         }
 
         h1 {
-            color: #2e86de;
-            margin-bottom: 30px;
-            font-size: 2.5em;
+            color: #2e86de; /* Warna yang lebih cerah */
+            margin-bottom: 30px; /* Margin yang lebih besar */
+            font-size: 2.5em; /* Ukuran font yang lebih besar */
         }
         h2 {
             margin-bottom: 15px;
         }
 
         .button {
-            background-color: #2e86de;
+            background-color: #2e86de; /* Warna yang konsisten dengan judul */
             color: white;
-            padding: 12px 20px;
+            padding: 12px 20px; /* Padding yang sedikit lebih besar */
             border: none;
-            border-radius: 6px;
+            border-radius: 6px; /* Border radius yang sedikit lebih melengkung */
             cursor: pointer;
             margin: 8px;
             display: inline-block;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
+            font-size: 1em; /* Ukuran font yang sedikit lebih besar */
+            transition: background-color 0.3s ease; /* Transisi yang halus */
         }
 
         .button:hover {
-            background-color: #1b4f72;
+            background-color: #1b4f72; /* Warna hover yang lebih gelap */
         }
 
         .button:disabled {
@@ -62,11 +62,11 @@
         }
 
         #room-info {
-            margin-bottom: 25px;
+            margin-bottom: 25px; /* Margin yang lebih besar */
         }
 
         #question-container {
-            margin-bottom: 25px;
+            margin-bottom: 25px; /* Margin yang lebih besar */
             border: 1px solid #ddd;
             padding: 15px;
             border-radius: 8px;
@@ -78,14 +78,14 @@
         .answer-button {
             display: block;
             width: 100%;
-            padding: 12px;
-            margin: 6px 0;
+            padding: 12px; /* Padding yang sedikit lebih besar */
+            margin: 6px 0; /* Margin yang sedikit lebih besar */
             border: 1px solid #ddd;
-            border-radius: 6px;
+            border-radius: 6px; /* Border radius yang sedikit lebih melengkung */
             cursor: pointer;
             background-color: white;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
+            font-size: 1em; /* Ukuran font yang sedikit lebih besar */
+            transition: background-color 0.3s ease; /* Transisi yang halus */
         }
 
         .answer-button:hover {
@@ -95,74 +95,81 @@
         #players-list {
             list-style: none;
             padding: 0;
-            margin-top: 10px;
+            margin-top: 10px; /* Margin atas */
 
         }
 
         #players-list li {
-            padding: 8px;
+            padding: 8px; /* Padding yang sedikit lebih besar */
             border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; /* Menggunakan flexbox */
+            justify-content: space-between; /* Meletakkan username dan skor di ujung-ujung */
+            align-items: center; /* Pusatkan secara vertikal */
         }
          #players-list li:last-child {
-             border-bottom: none;
+             border-bottom: none; /* Hilangkan border pada item terakhir */
          }
 
         #timer {
-            font-size: 1.4em;
+            font-size: 1.4em; /* Ukuran font yang lebih besar */
             font-weight: bold;
-            margin-bottom: 15px;
-            color: #e74c3c;
+            margin-bottom: 15px; /* Margin yang lebih besar */
+            color: #e74c3c; /* Warna merah untuk timer */
         }
 
         #error-message {
-            color: #e74c3c;
-            margin-top: 15px;
+            color: #e74c3c; /* Warna merah untuk error */
+            margin-top: 15px; /* Margin yang lebih besar */
         }
 
         /* Menyembunyikan elemen secara default */
-        #lobby, #room, #game-over, #auth-forms {
+        #lobby, #room, #game-over {
             display: none;
         }
+         /* Modal (sederhana - sebelum menggunakan SweetAlert) */
+        #username-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-        input[type="text"], input[type="password"] {
-            width: 90%;
+        #username-modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        #username-input{
+             width: 90%;
             padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-
-        #logout-btn {
-            display: none; /* Hidden by default */
-        }
-
     </style>
 </head>
 <body>
     <div id="app">
         <h1><i class="fas fa-gamepad"></i> Wanzofc Quiz</h1>
 
-        <!-- Authentication Forms (Login/Sign Up) -->
-        <div id="auth-forms">
-            <h2>Login</h2>
-            <input type="text" id="login-username" placeholder="Username">
-            <input type="password" id="login-password" placeholder="Password">
-            <button class="button" id="login-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
-            <p>Don't have an account? <a href="#" id="show-signup-btn">Sign Up</a></p>
-
-            <h2>Sign Up</h2>
-            <input type="text" id="signup-username" placeholder="Username">
-            <input type="password" id="signup-password" placeholder="Password">
-            <button class="button" id="signup-btn"><i class="fas fa-user-plus"></i> Sign Up</button>
-            <p>Already have an account? <a href="#" id="show-login-btn">Login</a></p>
+         <!-- Modal Username -->
+        <div id="username-modal">
+            <div id="username-modal-content">
+                <h2>Enter Your Username</h2>
+                <input type="text" id="username-input" placeholder="Username">
+                <button class="button" id="submit-username-btn">Play</button>
+            </div>
         </div>
-
 
         <!-- Lobby -->
         <div id="lobby">
+            <!-- <input type="text" id="username" placeholder="Your Name"> <!â€“ Tidak diperlukan lagi â€“>-->
             <button class="button" id="create-room-btn"><i class="fas fa-plus-circle"></i> Create Room</button>
             <input type="text" id="room-id-input" placeholder="Room ID">
             <button class="button" id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Join Room</button>
@@ -198,18 +205,18 @@
             <ul id="final-scores"></ul>
             <button class="button" id="back-to-lobby-btn"><i class="fas fa-arrow-left"></i> Back to Lobby</button>
         </div>
-        <button class="button" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script>
+     <script>
         const socket = io();
 
         // --- Elemen DOM ---
         const lobby = document.getElementById('lobby');
         const room = document.getElementById('room');
         const gameOver = document.getElementById('game-over');
+        // const usernameInput = document.getElementById('username'); // Tidak diperlukan lagi
         const createRoomBtn = document.getElementById('create-room-btn');
         const roomIdInput = document.getElementById('room-id-input');
         const joinRoomBtn = document.getElementById('join-room-btn');
@@ -224,18 +231,11 @@
         const errorMessage = document.getElementById('error-message');
         const finalScoresDisplay = document.getElementById('final-scores');
         const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
-        const logoutBtn = document.getElementById('logout-btn');
 
-        // Elemen Auth
-        const authForms = document.getElementById('auth-forms');
-        const loginUsernameInput = document.getElementById('login-username');
-        const loginPasswordInput = document.getElementById('login-password');
-        const loginBtn = document.getElementById('login-btn');
-        const signupUsernameInput = document.getElementById('signup-username');
-        const signupPasswordInput = document.getElementById('signup-password');
-        const signupBtn = document.getElementById('signup-btn');
-        const showSignupBtn = document.getElementById('show-signup-btn');
-        const showLoginBtn = document.getElementById('show-login-btn');
+        // Elemen modal
+        const usernameModal = document.getElementById('username-modal');
+        const usernameModalInput = document.getElementById('username-input');
+        const submitUsernameBtn = document.getElementById('submit-username-btn');
 
 
         // --- State ---
@@ -243,139 +243,41 @@
         let currentUsername = null;
         let isHost = false;
 
-
-        // --- Cek Authentication on Page Load ---
-        checkAuthentication();
-
+        // --- Cek Username di Local Storage ---
+        const storedUsername = localStorage.getItem('username');
+        if (storedUsername) {
+            currentUsername = storedUsername;
+            showLobby(); // Langsung tampilkan lobby
+        } else {
+            showUsernameModal(); // Tampilkan modal jika belum ada username
+        }
 
         // --- Event Handlers ---
 
-        // Login and Signup Form Visibility
-        function showLoginForm() {
-            authForms.style.display = 'block';
-            signupUsernameInput.parentElement.style.display = 'none';
-            signupPasswordInput.parentElement.style.display = 'none';
-            signupBtn.parentElement.style.display = 'none';
-            showSignupBtn.parentElement.style.display = 'block';
-            loginUsernameInput.parentElement.style.display = 'block';
-            loginPasswordInput.parentElement.style.display = 'block';
-            loginBtn.parentElement.style.display = 'block';
-            showLoginBtn.parentElement.style.display = 'none';
-        }
-
-        function showSignupForm() {
-            authForms.style.display = 'block';
-            loginUsernameInput.parentElement.style.display = 'none';
-            loginPasswordInput.parentElement.style.display = 'none';
-            loginBtn.parentElement.style.display = 'none';
-            showLoginBtn.parentElement.style.display = 'block';
-            signupUsernameInput.parentElement.style.display = 'block';
-            signupPasswordInput.parentElement.style.display = 'block';
-            signupBtn.parentElement.style.display = 'block';
-            showSignupBtn.parentElement.style.display = 'none';
-        }
-
-
-        showLoginBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            showLoginForm();
-        });
-        showSignupBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            showSignupForm();
-        });
-
-        // Login
-        loginBtn.addEventListener('click', () => {
-            const username = loginUsernameInput.value.trim();
-            const password = loginPasswordInput.value.trim();
-
-            if (!username || !password) {
-                displayError('Please enter both username and password.');
-                return;
+        // Submit Username (Modal)
+        submitUsernameBtn.addEventListener('click', () => {
+            const username = usernameModalInput.value.trim();
+            if (username) {
+                currentUsername = username;
+                localStorage.setItem('username', username); // Simpan di localStorage
+                usernameModal.style.display = 'none'; // Sembunyikan modal
+                showLobby();
+            } else {
+                // alert('Please enter a username.');
+                 Swal.fire({  // Pakai SweetAlert
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Please enter a username!',
+                });
             }
-
-            fetch('/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    currentUsername = username; // Set the username
-                    showLobby();
-                    Swal.fire('Success', 'Logged in successfully!', 'success');
-                } else {
-                    displayError(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                displayError('An error occurred during login.');
-            });
         });
-
-        // Signup
-        signupBtn.addEventListener('click', () => {
-            const username = signupUsernameInput.value.trim();
-            const password = signupPasswordInput.value.trim();
-
-            if (!username || !password) {
-                displayError('Please enter both username and password.');
-                return;
-            }
-
-            fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    currentUsername = username;
-                    showLobby();
-                    Swal.fire('Success', 'Account created successfully! You are now logged in.', 'success');
-                } else {
-                    displayError(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                displayError('An error occurred during registration.');
-            });
-        });
-
-        // Logout
-        logoutBtn.addEventListener('click', () => {
-            fetch('/logout', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    currentUsername = null;
-                    showAuthForms(); // Show login/signup
-                    Swal.fire('Logged Out', 'You have been logged out.', 'success');
-                } else {
-                    displayError(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                displayError('An error occurred during logout.');
-            });
-        });
-
 
 
         createRoomBtn.addEventListener('click', () => {
+            // const username = usernameInput.value.trim(); // Tidak diperlukan lagi
             const roomName = prompt("Enter room name (optional):");
-             // Username is already set in the session, no need to ask again
-                socket.emit('createRoom', currentUsername, roomName, (response) => { // Use currentUsername
+            if (currentUsername) {
+                socket.emit('createRoom', currentUsername, roomName, (response) => {
                     if (response.success) {
                         currentRoomId = response.roomId;
                          isHost = true; //Set sebagai host.
@@ -386,13 +288,17 @@
                          displayError(response.message);
                     }
                 });
+            } else {
+                // Harusnya tidak akan pernah sampai sini, karena ada modal username
+                showUsernameModal();
+            }
         });
 
         joinRoomBtn.addEventListener('click', () => {
+            // const username = usernameInput.value.trim(); // Tidak diperlukan lagi
             const roomId = roomIdInput.value.trim().toUpperCase();
-            if (roomId) {
-                 // Username is already set in the session
-                socket.emit('joinRoom', roomId, currentUsername, (response) => { // Use currentUsername
+            if (currentUsername && roomId) {
+                socket.emit('joinRoom', roomId, currentUsername, (response) => {
                     if (response.success) {
                         currentRoomId = roomId;
                         isHost = false;
@@ -404,7 +310,7 @@
                 });
             } else {
                 // alert('Please enter a username and room ID.');
-                displayError("Please enter Room Id")
+                displayError("Please enter a username and Room Id")
             }
         });
 
@@ -486,39 +392,29 @@
         })
 
         // --- Functions ---
-         function showAuthForms() {
-            authForms.style.display = 'block';
-            lobby.style.display = 'none';
-            room.style.display = 'none';
-            gameOver.style.display = 'none';
-            logoutBtn.style.display = 'none'; // Hide logout
-            showLoginForm(); // Default to login form
+
+        function showUsernameModal() {
+            usernameModal.style.display = 'flex'; // Tampilkan modal
+            usernameModalInput.focus(); // Fokuskan ke input
         }
 
-
         function showLobby() {
-            authForms.style.display = 'none';
             lobby.style.display = 'block';
             room.style.display = 'none';
              gameOver.style.display = 'none';
-             logoutBtn.style.display = 'inline-block';
             currentRoomId = null;
              clearQuestion();
         }
 
         function showRoom() {
-            authForms.style.display = 'none';
             lobby.style.display = 'none';
             room.style.display = 'block';
              gameOver.style.display = 'none';
-             logoutBtn.style.display = 'inline-block';
         }
         function showGameOver(){
-             authForms.style.display = 'none';
              lobby.style.display = 'none';
              room.style.display = 'none';
              gameOver.style.display = 'block';
-             logoutBtn.style.display = 'inline-block';
              clearQuestion(); //Bersihkan pertanyaan
         }
 
@@ -559,26 +455,6 @@
         backToLobbyBtn.addEventListener('click', () => {
                 showLobby();
          });
-
-
-        // --- Check Authentication Function ---
-        function checkAuthentication() {
-            fetch('/check-auth')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.isAuthenticated) {
-                        currentUsername = data.username;
-                        showLobby();
-                    } else {
-                        showAuthForms();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking authentication:', error);
-                    showAuthForms(); // Default to auth forms on error
-                });
-        }
-
     </script>
 </body>
 </html>
