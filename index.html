@@ -98,7 +98,7 @@
             margin-bottom: 15px;
             color: #e74c3c;
         }
-        #error-message {
+        #error-message {  /*Digunakan untuk menampilkan error (misalnya: room penuh) */
             color: #e74c3c;
             margin-top: 15px;
         }
@@ -157,6 +157,10 @@
         #auth-form {
             display: block;
         }
+        /*Style untuk decode html entity*/
+        .decode {
+            display: inline-block; /* Or block, depending on your layout */
+        }
 
     </style>
 </head>
@@ -165,7 +169,7 @@
         <h1><i class="fas fa-gamepad"></i> Wanzofc Quiz</h1>
         <button id="logout-btn" class="hidden"><i class="fas fa-sign-out-alt"></i></button>
 
-        <!-- Login/Register Form (Shown Initially) -->
+        <!-- Login/Register Form -->
         <div id="auth-form">
             <h2>Login / Register</h2>
             <input type="text" id="username-input" placeholder="Username">
@@ -174,6 +178,7 @@
             <button class="button" id="register-btn">Register</button>
         </div>
 
+        <!-- Lobby -->
         <div id="lobby">
             <button class="button" id="create-room-btn"><i class="fas fa-plus-circle"></i> Create Room</button>
              <div id="error-message"></div>
@@ -184,6 +189,7 @@
             </div>
         </div>
 
+        <!-- Room -->
         <div id="room">
             <h2 id="room-name"></h2>
             <div id="timer"></div>
@@ -203,6 +209,7 @@
             <button class="button" id="leave-room-btn"><i class="fas fa-sign-out-alt"></i> Leave Room</button>
         </div>
 
+        <!-- Game Over -->
           <div id="game-over">
               <h2>Game Over!</h2>
             <p>Scores:</p>
@@ -217,8 +224,9 @@
     <script>
         const socket = io();
 
+        // --- Elemen DOM ---
         const appContainer = document.getElementById('app');
-        const authForm = document.getElementById('auth-form'); // Get the auth form
+        const authForm = document.getElementById('auth-form');
         const usernameInput = document.getElementById('username-input');
         const passwordInput = document.getElementById('password-input');
         const loginBtn = document.getElementById('login-btn');
@@ -237,26 +245,39 @@
         const leaveRoomBtn = document.getElementById('leave-room-btn');
         const restartBtn = document.getElementById('restart-btn');
         const timerDisplay = document.getElementById('timer');
-        const errorMessage = document.getElementById('error-message');
+        const errorMessage = document.getElementById('error-message'); // Element untuk error
         const finalScoresDisplay = document.getElementById('final-scores');
         const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const roomListContainer = document.getElementById('room-list-container');
 
+        // --- Variabel Status ---
         let currentRoomId = null;
         let currentUsername = null;
-        let isHost = false;
+        let isHost = false; // Apakah user saat ini adalah host
 
+        // --- Fungsi untuk decode HTML entities ---
+        function decodeHtml(html) {
+            var txt = document.createElement("textarea");
+            txt.innerHTML = html;
+            return txt.value;
+        }
+
+
+        // --- Event Handlers ---
+
+        // Cek sesi saat halaman dimuat
         socket.emit('checkSession', (response) => {
             if (response.loggedIn) {
                 currentUsername = response.username;
                 showLobby();
                 showLogoutButton();
             } else {
-                showAuthForm(); // Show the auth form directly
+                showAuthForm();
             }
         });
 
+        // Login
         loginBtn.addEventListener('click', () => {
             const username = usernameInput.value.trim();
             const password = passwordInput.value.trim();
@@ -276,6 +297,7 @@
             }
         });
 
+        // Register
         registerBtn.addEventListener('click', () => {
             const username = usernameInput.value.trim();
             const password = passwordInput.value.trim();
@@ -287,6 +309,7 @@
                             title: 'Registered!',
                             text: 'You can now login.',
                         });
+                        // Bersihkan form
                         usernameInput.value = '';
                         passwordInput.value = '';
                     } else {
@@ -298,23 +321,25 @@
             }
         });
 
+        // Logout
         logoutBtn.addEventListener('click', () => {
             socket.emit('logout');
             currentUsername = null;
             hideLogoutButton();
-            showAuthForm(); // Show the auth form again
+            showAuthForm(); // Tampilkan kembali form login
             clearRoomList();
         });
 
+        // Create Room
         createRoomBtn.addEventListener('click', () => {
-            const roomName = prompt("Enter room name (optional):");
-            if (currentUsername) {
+            const roomName = prompt("Enter room name (optional):"); // Opsional: Nama room
+            if (currentUsername) { // Pastikan user sudah login
                 socket.emit('createRoom', currentUsername, roomName, (response) => {
                     if (response.success) {
                         currentRoomId = response.roomId;
-                        isHost = true;
+                        isHost = true; // User yang membuat room adalah host
                         showRoom();
-                        restartBtn.style.display = 'inline-block';
+                        restartBtn.style.display = 'inline-block'; // Tampilkan tombol restart
                     } else {
                          displayError(response.message);
 
@@ -323,6 +348,7 @@
             }
         });
 
+        // Join Room (click pada tombol join)
           roomList.addEventListener('click', (event) => {
             if (event.target.classList.contains('join-room-button')) {
                 const roomId = event.target.dataset.roomId;
@@ -330,7 +356,7 @@
                     socket.emit('joinRoom', roomId, (response) => {
                         if (response.success) {
                             currentRoomId = roomId;
-                            isHost = false;
+                            isHost = false; // User yang join bukan host
                             showRoom();
                         } else {
                             displayError(response.message);
@@ -341,29 +367,40 @@
             }
         });
 
+        // Menjawab Pertanyaan
         answersContainer.addEventListener('click', (event) => {
             if (event.target.classList.contains('answer-button')) {
                 const answerIndex = parseInt(event.target.dataset.index);
                 socket.emit('answerQuestion', answerIndex, (response) => {
+                  //Nonaktifkan tombol setelah menjawab
                   disableAnswerButtons();
                 });
             }
         });
 
+        // Leave Room
         leaveRoomBtn.addEventListener('click', () => {
             socket.emit('leaveRoom');
             showLobby();
             roomListContainer.style.display = 'block';
+
         });
 
+        // Restart Game (hanya host)
         restartBtn.addEventListener('click', () => {
-            socket.emit('restartGame');
+            socket.emit('restartGame'); // Kirim event ke server
         })
 
+
+
+        // --- Socket.IO Event Listeners ---
+
+        // Menerima daftar room
         socket.on('roomList', (rooms) => {
             displayRoomList(rooms);
         });
 
+        // Menerima informasi room (update tampilan)
           socket.on('roomInfo', (data) => {
             roomNameDisplay.textContent = data.roomName;
             roomIdDisplay.textContent = data.roomId;
@@ -371,20 +408,25 @@
             playersList.innerHTML = data.users.map(user => `<li><span>${user.username}</span> <span>${user.score}</span></li>`).join('');
             timerDisplay.textContent = `Time left: ${data.timeLeft}s`;
 
-            if(data.currentQuestionIndex === 1) {
-                displayQuestion(data.questions ? data.questions[0] : null);
+            //Tampilkan pertanyaan pertama saat pertama kali masuk room
+            if(data.currentQuestionIndex === 1) { //Index 1 (bukan 0, karena kita +1 di server)
+                displayQuestion(data.questions ? data.questions[0] : null); //data.questions[0]
             }
         });
 
+        // Menerima pertanyaan berikutnya
         socket.on('nextQuestion', (question) => {
-            displayQuestion(question);
-            Swal.close();
+             displayQuestion(question);
+             Swal.close(); // Tutup SweetAlert yang mungkin terbuka
         });
 
+        // Game Over
         socket.on('gameOver', (scores) => {
+            // Tentukan pemenang (bisa lebih dari satu jika seri)
             const myScore = scores.find(user => user.username === currentUsername);
             const highestScore = Math.max(...scores.map(user => user.score));
 
+            //Tampilkan SweetAlert
             if(myScore && myScore.score === highestScore){
                 Swal.fire({
                     icon: 'success',
@@ -400,13 +442,16 @@
             }
 
             finalScoresDisplay.innerHTML = scores.map(user => `<li>${user.username} : ${user.score}</li>`).join('');
-            showGameOver();
+            showGameOver(); // Pindah ke tampilan game over
         });
+
+        // Game di-restart
         socket.on('gameRestarted', (question) => {
             showRoom();
             displayQuestion(question);
         });
 
+        // User bergabung ke room (notifikasi)
         socket.on('userJoined', (username) => {
             Swal.fire({
                 icon: 'info',
@@ -418,7 +463,10 @@
                 timer: 3000
             });
         });
+
+        // User keluar (karena logout, disconnect, dll)
         socket.on('userLoggedOut', (username) => {
+            //Notifikasi hanya jika sedang di dalam room
             if(currentRoomId){
                  Swal.fire({
                     icon: 'info',
@@ -432,18 +480,23 @@
             }
         });
 
+
         socket.on('error', (message) => {
             displayError(message);
         })
 
+
+
+        // --- Fungsi UI ---
+
         function showAuthForm() {
-            authForm.style.display = 'block'; // Show the form
+            authForm.style.display = 'block';
             lobby.style.display = 'none';
             room.style.display = 'none';
             gameOver.style.display = 'none';
         }
         function hideAuthForm() {
-            authForm.style.display = 'none'; // Hide the form
+            authForm.style.display = 'none';
         }
 
         function showLobby() {
@@ -468,17 +521,22 @@
              clearQuestion();
         }
 
+        // Menampilkan pertanyaan dan jawaban
         function displayQuestion(question) {
-            if(!question) return;
-            questionText.textContent = question.question;
-            answersContainer.innerHTML = question.answers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
-            enableAnswerButtons();
+            if(!question) return; //Pastikan ada pertanyaan
+            questionText.innerHTML = `<span class="decode">${decodeHtml(question.question)}</span>`; // Decode dan tampilkan
+
+            answersContainer.innerHTML = question.answers
+            .map((answer, index) => `<button class="answer-button" data-index="${index}"><span class="decode">${decodeHtml(answer)}</span></button>`)
+            .join('');
+            enableAnswerButtons(); // Pastikan tombol aktif
         }
 
         function clearQuestion(){
              questionText.textContent = "";
              answersContainer.innerHTML = "";
         }
+
 
         function disableAnswerButtons() {
             const buttons = document.querySelectorAll('.answer-button');
@@ -489,6 +547,7 @@
             buttons.forEach(button => { button.disabled = false; });
         }
 
+        // Menampilkan error dengan SweetAlert2
         function displayError(message){
               Swal.fire({
                     icon: 'error',
@@ -497,6 +556,8 @@
                 });
         }
 
+
+        // Menampilkan daftar room yang tersedia
          function displayRoomList(rooms) {
             roomList.innerHTML = rooms.map(room => `
                 <li>
@@ -506,6 +567,7 @@
                 </li>
             `).join('');
         }
+
         function clearRoomList() {
             roomList.innerHTML = '';
         }
@@ -517,6 +579,7 @@
             logoutBtn.classList.add('hidden');
         }
 
+        // --- Event Listener untuk kembali ke Lobby dari Game Over ---
         backToLobbyBtn.addEventListener('click', () => {
                 showLobby();
          });
