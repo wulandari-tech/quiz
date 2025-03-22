@@ -1,8 +1,8 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const fetch = require('node-fetch');
-const cheerio = require('cheerio'); // Tambahkan cheerio
 
 const app = express();
 const server = http.createServer(app);
@@ -22,42 +22,37 @@ function generateRoomId() {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
 }
 
+async function fetchQuestions(amount = 10, category = null, difficulty = null, type = null) {
+    let url = `https://opentdb.com/api.php?amount=${amount}`;
+    if (category) url += `&category=${category}`;
+    if (difficulty) url += `&difficulty=${difficulty}`;
+    if (type) url += `&type=${type}`;
 
-// GANTI FUNGSI fetchQuestions dengan ini:
-async function fetchQuestionsFromIDNTimes(url) { // URL kuis IDN Times HARUS diberikan
     try {
         const response = await fetch(url);
-        const html = await response.text();
-        const $ = cheerio.load(html);
+        const data = await response.json();
 
-        const questions = [];
+        if (data.response_code === 0) {
+            return data.results.map(item => {
+                const answers = [...item.incorrect_answers, item.correct_answer];
+                answers.sort(() => Math.random() - 0.5);
+                const correctIndex = answers.indexOf(item.correct_answer);
 
-        // CONTOH untuk SATU JENIS KUIS di IDN Times.
-        // Ini HARUS disesuaikan tergantung struktur HTML kuis yang Anda pilih.
-        $('.quiz-item').each((index, element) => { //Mungkin class ini tidak ada.
-            const questionText = $(element).find('.quiz-question-text').text().trim(); // Sesuaikan selector
-            const answers = [];
-            $(element).find('.quiz-answer').each((i, el) => {  // Sesuaikan selector
-                answers.push($(el).text().trim());
-            });
-
-
-            if (questionText && answers.length > 0) {
-                questions.push({
-                    question: questionText,
+                return {
+                    question: item.question,
                     answers: answers,
-                    correct: null, // Kita TIDAK TAHU jawaban benarnya!
-                });
-            }
-        });
-        return questions;
+                    correct: correctIndex
+                };
+            });
+        } else {
+            console.error("Error fetching questions from OTDB:", data.response_code);
+            return [];
+        }
     } catch (error) {
-        console.error("Error scraping IDN Times:", error);
+        console.error("Error fetching questions:", error);
         return [];
     }
 }
-
-
 
 // --- Serve static files (HTML, CSS, JS client) ---
 app.get('/', (req, res) => {
@@ -75,9 +70,7 @@ io.on('connection', (socket) => {
         }
 
         const roomId = generateRoomId();
-        // GANTI pemanggilan fetchQuestions:
-        const idnTimesQuizUrl = 'https://www.idntimes.com/quiz/trivia/kuis-tebak-gambar-bendera-negara-asean-c2t1'; // GANTI dengan URL kuis IDN Times yang *spesifik*
-        const questions = await fetchQuestionsFromIDNTimes(idnTimesQuizUrl);
+        const questions = await fetchQuestions(10, 9, "easy");  // Sesuaikan
 
         if (questions.length > 0) {
             rooms[roomId] = {
@@ -86,7 +79,7 @@ io.on('connection', (socket) => {
                 questions: questions,
                 roomName: roomName || `Room ${roomId}`,
                 timer: null,
-                timeLeft: 60,
+                timeLeft: 30,
             };
             users[socket.id] = { username, score: 0, roomId };
             socket.join(roomId);
@@ -99,7 +92,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('joinRoom', (roomId, username, callback) => {
-         // ... (kode joinRoom tidak berubah)
+        // Validasi username
         if (!username || username.trim().length === 0) {
             callback({ success: false, message: 'Invalid username.' });
             return;
@@ -129,7 +122,7 @@ io.on('connection', (socket) => {
         }
     });
 
-     socket.on('answerQuestion', (answerIndex, callback) => {
+    socket.on('answerQuestion', (answerIndex, callback) => {
         const user = users[socket.id];
         if (!user || !rooms[user.roomId]) {
             callback({success: false, message: "Error answer"})
@@ -139,10 +132,19 @@ io.on('connection', (socket) => {
 
         const currentQuestionIndex = room.questionIndex;
         const currentQuestion = room.questions[currentQuestionIndex];
-        //Karena kita tidak tahu jawaban yang benar, kita beri nilai 0 saja.
-        callback({ success: true, correct: false, score: users[socket.id].score });
+
+        if (answerIndex === currentQuestion.correct) {
+            rooms[user.roomId].users[socket.id].score += 10;
+            users[socket.id].score += 10; //Update juga di users.
+            callback({ success: true, correct: true, score: users[socket.id].score });
+
+        } else {
+             callback({ success: true, correct: false, score: users[socket.id].score });
+
+        }
         // Jangan pindah ke pertanyaan berikutnya di sini; biarkan timer yang menangani
     });
+
     socket.on('restartGame', async () => {
         const user = users[socket.id];
         if (!user || !rooms[user.roomId]) return;
@@ -150,9 +152,8 @@ io.on('connection', (socket) => {
 
         const hostSocketId = Object.keys(room.users)[0];
         if (socket.id !== hostSocketId) return;
-        const idnTimesQuizUrl = 'https://www.idntimes.com/quiz/trivia/kuis-tebak-gambar-bendera-negara-asean-c2t1'; //GANTI URL
 
-        const newQuestions = await fetchQuestionsFromIDNTimes(idnTimesQuizUrl); // Sesuaikan
+        const newQuestions = await fetchQuestions(10, 9, "easy"); // Sesuaikan
         if (newQuestions.length === 0) {
           io.to(user.roomId).emit('error', 'Failed to fetch questions for restart.');
           return;
@@ -160,7 +161,7 @@ io.on('connection', (socket) => {
 
         room.questionIndex = 0;
         room.questions = newQuestions;
-        room.timeLeft = 60; // Reset timer
+        room.timeLeft = 30; 
 
         for (const userId in room.users) {
             room.users[userId].score = 0;
@@ -233,7 +234,7 @@ io.on('connection', (socket) => {
     function startTimer(roomId) {
         if (!rooms[roomId]) return;
 
-        rooms[roomId].timeLeft = 60;
+        rooms[roomId].timeLeft = 30;
         updateRoomInfo(roomId);
 
         rooms[roomId].timer = setInterval(() => {
