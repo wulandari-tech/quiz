@@ -3,319 +3,453 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Game</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <title>Wanzofc Quiz</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11">
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Ganti font sesuai selera */
-            background-color: #f4f4f4;
-            color: #333;
+         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Font yang lebih modern */
             margin: 0;
             padding: 0;
+            background-color: #f0f2f5; /* Warna latar belakang yang lebih lembut */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
 
-        .container {
+        #app {
             background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            width: 80%; /* Sesuaikan lebar */
-            max-width: 600px; /* Lebar maksimum */
-            text-align: center;
+            padding: 30px; /* Padding lebih besar */
+            border-radius: 12px; /* Border radius yang lebih melengkung */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Box shadow yang lebih halus */
+            width: 90%;
+            max-width: 650px; /* Max-width yang sedikit lebih besar */
+            text-align: center; /* Pusatkan semua konten */
         }
 
         h1 {
-            color: #4CAF50; /* Hijau */
-            margin-bottom: 20px;
+            color: #2e86de; /* Warna yang lebih cerah */
+            margin-bottom: 30px; /* Margin yang lebih besar */
+            font-size: 2.5em; /* Ukuran font yang lebih besar */
         }
-        #setup, #gameArea{
-             margin-bottom: 20px;
-        }
-
-        input[type="text"] {
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            width: calc(100% - 22px); /* Lebar input */
-        }
-
-        button {
-            background-color: #4CAF50; /* Hijau */
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 5px;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #367c39;
-        }
-
-        #question {
-            font-weight: bold;
-            font-size: 1.2em;
+        h2 {
             margin-bottom: 15px;
         }
 
-        .answer {
-            background-color: #eee;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 4px;
+        .button {
+            background-color: #2e86de; /* Warna yang konsisten dengan judul */
+            color: white;
+            padding: 12px 20px; /* Padding yang sedikit lebih besar */
+            border: none;
+            border-radius: 6px; /* Border radius yang sedikit lebih melengkung */
             cursor: pointer;
-            transition: background-color 0.3s;
+            margin: 8px;
+            display: inline-block;
+            font-size: 1em; /* Ukuran font yang sedikit lebih besar */
+            transition: background-color 0.3s ease; /* Transisi yang halus */
         }
 
-        .answer:hover {
-            background-color: #ddd;
+        .button:hover {
+            background-color: #1b4f72; /* Warna hover yang lebih gelap */
         }
 
-        #roomInfo {
-            margin-top: 20px;
-            border-top: 1px solid #ddd;
-            padding-top: 20px;
-            text-align: left;
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
 
-        #userList {
+        #room-info {
+            margin-bottom: 25px; /* Margin yang lebih besar */
+        }
+
+        #question-container {
+            margin-bottom: 25px; /* Margin yang lebih besar */
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+        }
+          #question-text {
+             margin-bottom: 20px;
+         }
+
+        .answer-button {
+            display: block;
+            width: 100%;
+            padding: 12px; /* Padding yang sedikit lebih besar */
+            margin: 6px 0; /* Margin yang sedikit lebih besar */
+            border: 1px solid #ddd;
+            border-radius: 6px; /* Border radius yang sedikit lebih melengkung */
+            cursor: pointer;
+            background-color: white;
+            font-size: 1em; /* Ukuran font yang sedikit lebih besar */
+            transition: background-color 0.3s ease; /* Transisi yang halus */
+        }
+
+        .answer-button:hover {
+            background-color: #f0f0f0;
+        }
+
+        #players-list {
             list-style: none;
             padding: 0;
+            margin-top: 10px; /* Margin atas */
+
         }
 
-        #userList li {
-            margin: 5px 0;
+        #players-list li {
+            padding: 8px; /* Padding yang sedikit lebih besar */
+            border-bottom: 1px solid #eee;
+            display: flex; /* Menggunakan flexbox */
+            justify-content: space-between; /* Meletakkan username dan skor di ujung-ujung */
+            align-items: center; /* Pusatkan secara vertikal */
+        }
+         #players-list li:last-child {
+             border-bottom: none; /* Hilangkan border pada item terakhir */
+         }
+
+        #timer {
+            font-size: 1.4em; /* Ukuran font yang lebih besar */
+            font-weight: bold;
+            margin-bottom: 15px; /* Margin yang lebih besar */
+            color: #e74c3c; /* Warna merah untuk timer */
         }
 
-        #message {
-            margin-top: 10px;
-            color: #888;
-        }
-        #restartBtn{
-            margin-top: 2rem;
+        #error-message {
+            color: #e74c3c; /* Warna merah untuk error */
+            margin-top: 15px; /* Margin yang lebih besar */
         }
 
-        .hidden {
+        /* Menyembunyikan elemen secara default */
+        #lobby, #room, #game-over {
             display: none;
+        }
+         /* Modal (sederhana - sebelum menggunakan SweetAlert) */
+        #username-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #username-modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        #username-input{
+             width: 90%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1><i class="fas fa-question-circle"></i> Quiz Game</h1>
+    <div id="app">
+        <h1><i class="fas fa-gamepad"></i> Wanzofc Quiz</h1>
 
-        <!-- Form untuk create/join room -->
-        <div id="setup">
-            <input type="text" id="username" placeholder="Enter your username">
-             <input type="text" id="joinRoomId" class="hidden" placeholder="Enter room ID (if joining)">
-            <div>
-            <button id="createRoomBtn"><i class="fas fa-plus-square"></i> Create Room</button>
-            <button id="joinRoomBtn"><i class="fas fa-sign-in-alt"></i> Join Room</button>
+         <!-- Modal Username -->
+        <div id="username-modal">
+            <div id="username-modal-content">
+                <h2>Enter Your Username</h2>
+                <input type="text" id="username-input" placeholder="Username">
+                <button class="button" id="submit-username-btn">Play</button>
             </div>
         </div>
 
-        <!-- Area permainan (awalnya disembunyikan) -->
-        <div id="gameArea" class="hidden">
-            <div id="roomInfo">
-                Room ID: <span id="roomId"></span><br>
-                Room Name: <span id="roomName"></span><br>
-                <div>Users: <ul id="userList"></ul></div>
-                <p>Time Left: <span id="timeLeft"></span></p>
-                <p>Question <span id="currentQuestionNum"></span> of <span id="totalQuestion"></span></p>
+        <!-- Lobby -->
+        <div id="lobby">
+            <!-- <input type="text" id="username" placeholder="Your Name"> <!â€“ Tidak diperlukan lagi â€“>-->
+            <button class="button" id="create-room-btn"><i class="fas fa-plus-circle"></i> Create Room</button>
+            <input type="text" id="room-id-input" placeholder="Room ID">
+            <button class="button" id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Join Room</button>
+             <div id="error-message"></div>
+        </div>
 
+        <!-- Room -->
+        <div id="room">
+            <h2 id="room-name"></h2>
+            <div id="timer"></div>
+            <div id="room-info">
+                <p>Room ID: <span id="room-id-display"></span></p>
+                <p>Players:</p>
+                <ul id="players-list">
+                    <!-- Daftar pemain akan diisi di sini -->
+                </ul>
             </div>
-
-            <div id="quizContainer">
-                <div id="question"></div>
-                <div id="answers"></div>
+            <div id="question-container">
+                <h3 id="question-text"></h3>
+                <div id="answers-container">
+                    <!-- Tombol jawaban akan diisi di sini -->
+                </div>
             </div>
+             <button class="button" id="restart-btn" style="display: none;"><i class="fas fa-redo-alt"></i> Restart Game</button>
+            <button class="button" id="leave-room-btn"><i class="fas fa-sign-out-alt"></i> Leave Room</button>
 
-            <button id="restartBtn" class="hidden"><i class="fas fa-redo"></i> Restart Game</button>
-            <div id="message"></div>
+        </div>
+
+        <!-- Game Over -->
+        <div id="game-over">
+              <h2>Game Over!</h2>
+            <p>Scores:</p>
+            <ul id="final-scores"></ul>
+            <button class="button" id="back-to-lobby-btn"><i class="fas fa-arrow-left"></i> Back to Lobby</button>
         </div>
     </div>
 
-
-    <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
+    <script src="/socket.io/socket.io.js"></script>
+     <script>
         const socket = io();
 
-        // --- Elemen-elemen HTML ---
-        const questionEl = document.getElementById('question');
-        const answersEl = document.getElementById('answers');
-        const messageEl = document.getElementById('message');
-        const roomIdEl = document.getElementById('roomId');
-        const roomNameEl = document.getElementById('roomName');
-        const userListEl = document.getElementById('userList');
-        const timeLeftEl = document.getElementById('timeLeft');
-        const setupDiv = document.getElementById('setup');
-        const gameAreaDiv = document.getElementById('gameArea');
-        const createRoomBtn = document.getElementById('createRoomBtn');
-        const joinRoomBtn = document.getElementById('joinRoomBtn');
-        const usernameInput = document.getElementById('username');
-        const joinRoomIdInput = document.getElementById('joinRoomId');
-        const restartBtn = document.getElementById('restartBtn');
-        const currentQuestionNumEl = document.getElementById('currentQuestionNum');
-        const totalQuestionEl = document.getElementById('totalQuestion');
+        // --- Elemen DOM ---
+        const lobby = document.getElementById('lobby');
+        const room = document.getElementById('room');
+        const gameOver = document.getElementById('game-over');
+        // const usernameInput = document.getElementById('username'); // Tidak diperlukan lagi
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const roomIdInput = document.getElementById('room-id-input');
+        const joinRoomBtn = document.getElementById('join-room-btn');
+        const roomNameDisplay = document.getElementById('room-name');
+        const roomIdDisplay = document.getElementById('room-id-display');
+        const playersList = document.getElementById('players-list');
+        const questionText = document.getElementById('question-text');
+        const answersContainer = document.getElementById('answers-container');
+        const leaveRoomBtn = document.getElementById('leave-room-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const timerDisplay = document.getElementById('timer');
+        const errorMessage = document.getElementById('error-message');
+        const finalScoresDisplay = document.getElementById('final-scores');
+        const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
 
-        // --- Cek username di localStorage ---
-        const savedUsername = localStorage.getItem('quizUsername');
-        if (savedUsername) {
-            usernameInput.value = savedUsername;
+        // Elemen modal
+        const usernameModal = document.getElementById('username-modal');
+        const usernameModalInput = document.getElementById('username-input');
+        const submitUsernameBtn = document.getElementById('submit-username-btn');
+
+
+        // --- State ---
+        let currentRoomId = null;
+        let currentUsername = null;
+        let isHost = false;
+
+        // --- Cek Username di Local Storage ---
+        const storedUsername = localStorage.getItem('username');
+        if (storedUsername) {
+            currentUsername = storedUsername;
+            showLobby(); // Langsung tampilkan lobby
+        } else {
+            showUsernameModal(); // Tampilkan modal jika belum ada username
         }
 
-        // --- Event Listeners ---
-        function handleRoomCreationOrJoin(success, message, roomId, questions) {
-            if (success) {
-                console.log(message, roomId);
-                setupDiv.classList.add('hidden');
-                gameAreaDiv.classList.remove('hidden');
-                restartBtn.classList.remove('hidden');
-                localStorage.setItem('quizUsername', usernameInput.value.trim()); // Simpan username
+        // --- Event Handlers ---
 
-                if (questions && questions.length > 0) {
-                    displayQuestion(questions[0]);
-                }
+        // Submit Username (Modal)
+        submitUsernameBtn.addEventListener('click', () => {
+            const username = usernameModalInput.value.trim();
+            if (username) {
+                currentUsername = username;
+                localStorage.setItem('username', username); // Simpan di localStorage
+                usernameModal.style.display = 'none'; // Sembunyikan modal
+                showLobby();
             } else {
-                Swal.fire({
+                // alert('Please enter a username.');
+                 Swal.fire({  // Pakai SweetAlert
                     icon: 'error',
                     title: 'Oops...',
-                    text: message,
+                    text: 'Please enter a username!',
                 });
             }
-        }
-        // --- Event Listeners ---
+        });
+
+
         createRoomBtn.addEventListener('click', () => {
-            const username = usernameInput.value.trim();
-            if (!username) {
-              Swal.fire('Please enter a username.');
-              return;
+            // const username = usernameInput.value.trim(); // Tidak diperlukan lagi
+            const roomName = prompt("Enter room name (optional):");
+            if (currentUsername) {
+                socket.emit('createRoom', currentUsername, roomName, (response) => {
+                    if (response.success) {
+                        currentRoomId = response.roomId;
+                         isHost = true; //Set sebagai host.
+                        showRoom();
+                        restartBtn.style.display = 'inline-block'; // Tampilkan tombol restart untuk host
+                    } else {
+                        // alert(response.message);
+                         displayError(response.message);
+                    }
+                });
+            } else {
+                // Harusnya tidak akan pernah sampai sini, karena ada modal username
+                showUsernameModal();
             }
-             joinRoomIdInput.classList.add('hidden');
-            socket.emit('createRoom', username, '', (response) => {
-              handleRoomCreationOrJoin(response.success, 'Room created:', response.roomId, response.questions);
-            });
         });
 
         joinRoomBtn.addEventListener('click', () => {
-            const username = usernameInput.value.trim();
-            const roomId = joinRoomIdInput.value.trim();
-             if (!username) {
-                Swal.fire('Please enter a username.');
-                return;
+            // const username = usernameInput.value.trim(); // Tidak diperlukan lagi
+            const roomId = roomIdInput.value.trim().toUpperCase();
+            if (currentUsername && roomId) {
+                socket.emit('joinRoom', roomId, currentUsername, (response) => {
+                    if (response.success) {
+                        currentRoomId = roomId;
+                        isHost = false;
+                        showRoom();
+                    } else {
+                        // alert(response.message);
+                         displayError(response.message);
+                    }
+                });
+            } else {
+                // alert('Please enter a username and room ID.');
+                displayError("silakan masukkan nama pengguna dan ID kamar")
             }
-            if (!roomId) {
-                Swal.fire('Please enter a room ID to join.');
-                return;
-            }
-            joinRoomIdInput.classList.remove('hidden');
-            socket.emit('joinRoom', roomId, username, (response) => {
-               handleRoomCreationOrJoin(response.success, 'Joined room:', roomId, response.questions);
-            });
         });
 
-        restartBtn.addEventListener('click', () => {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "This will restart the game for all players in the room!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, restart it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    socket.emit('restartGame');
-                }
-            });
+        answersContainer.addEventListener('click', (event) => {
+            if (event.target.classList.contains('answer-button')) {
+                const answerIndex = parseInt(event.target.dataset.index);
+                socket.emit('answerQuestion', answerIndex, (response) => {
+                  disableAnswerButtons();
+                });
+            }
         });
-        // --- Socket.IO Events ---
 
-        socket.on('roomInfo', (roomInfo) => {
-            roomIdEl.textContent = roomInfo.roomId;
-            roomNameEl.textContent = roomInfo.roomName;
-            userListEl.innerHTML = '';
-            roomInfo.users.forEach(user => {
-                const li = document.createElement('li');
-                li.textContent = `${user.username} (Score: ${user.score})`;
-                userListEl.appendChild(li);
-            });
-             timeLeftEl.textContent = roomInfo.timeLeft;
-            currentQuestionNumEl.textContent = roomInfo.currentQuestionIndex;
-            totalQuestionEl.textContent = roomInfo.totalQuestions;
+        leaveRoomBtn.addEventListener('click', () => {
+            socket.emit('leaveRoom');
+            showLobby();
+        });
+         restartBtn.addEventListener('click', ()=>{
+             socket.emit('restartGame');
+        })
+
+        // --- Socket.IO Event Listeners ---
+        socket.on('roomInfo', (data) => {
+            roomNameDisplay.textContent = data.roomName;
+            roomIdDisplay.textContent = data.roomId;
+            playersList.innerHTML = data.users.map(user => `
+                <li>
+                    <span>${user.username}</span>
+                    <span>${user.score}</span>
+                </li>
+            `).join('');
+            timerDisplay.textContent = `Time left: ${data.timeLeft}s`;
+
+             // Tampilkan pertanyaan pertama saat pertama kali join
+            if(data.currentQuestionIndex === 1) {
+                displayQuestion(data.questions ? data.questions[0] : null); //Cek jika questions ada.
+            }
         });
 
         socket.on('nextQuestion', (question) => {
             displayQuestion(question);
+             //Hapus notif sebelumnya, JIKA ADA.
+            Swal.close();
         });
 
         socket.on('gameOver', (scores) => {
-            let scoreboard = "Game Over!\n\nScores:\n";
-            scores.sort((a, b) => b.score - a.score); // Urutkan skor
-            scores.forEach(user => {
-                scoreboard += `${user.username}: ${user.score}\n`;
-            });
+            const myScore = scores.find(user => user.username === currentUsername);
+            const highestScore = Math.max(...scores.map(user => user.score)); //Cari score tertinggi.
 
-            Swal.fire({
-                title: 'Game Over!',
-                text: scoreboard,
-                icon: 'info',
-            });
-            restartBtn.classList.remove('hidden');
-        });
-        socket.on('gameRestarted', (question) => {
-            Swal.fire('Game Restarted!', 'The game has been restarted by the host.', 'info');
-            displayQuestion(question);
-        });
+            if(myScore && myScore.score === highestScore){
+                 
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Congratulations!',
+                    text: 'kamu menang!',
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Game Over!',
+                    text: 'kamu kalah!',
+                });
+            }
 
-         socket.on('error', (message) => {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: message,
-            });
+            finalScoresDisplay.innerHTML = scores.map(user => `<li>${user.username} : ${user.score}</li>`).join('');
+            showGameOver();
         });
 
-        // --- Fungsi-fungsi bantuan ---
+         socket.on('gameRestarted', (question)=>{
+             showRoom();
+             displayQuestion(question);
+              Swal.close(); 
+
+        });
+
+        socket.on('error', (message) => {
+            displayError(message)
+        })
+        function showUsernameModal() {
+            usernameModal.style.display = 'flex'; // Tampilkan modal
+            usernameModalInput.focus(); // Fokuskan ke input
+        }
+
+        function showLobby() {
+            lobby.style.display = 'block';
+            room.style.display = 'none';
+             gameOver.style.display = 'none';
+            currentRoomId = null;
+             clearQuestion();
+        }
+
+        function showRoom() {
+            lobby.style.display = 'none';
+            room.style.display = 'block';
+             gameOver.style.display = 'none';
+        }
+        function showGameOver(){
+             lobby.style.display = 'none';
+             room.style.display = 'none';
+             gameOver.style.display = 'block';
+             clearQuestion(); //Bersihkan pertanyaan
+        }
 
         function displayQuestion(question) {
-            questionEl.innerHTML = question.question;
-            answersEl.innerHTML = '';
-            question.answers.forEach((answer, index) => {
-                const answerDiv = document.createElement('div');
-                answerDiv.classList.add('answer');
-                answerDiv.innerHTML = answer; // Gunakan innerHTML
-                answerDiv.addEventListener('click', () => {
-                    // Matikan event listener untuk semua jawaban
-                    document.querySelectorAll('.answer').forEach(el => {
-                        el.style.pointerEvents = 'none';
-                    });
-                    socket.emit('answerQuestion', index, (response) => {
-                        if (response.correct) {
-                            answerDiv.style.backgroundColor = 'lightgreen';
-                        } else {
-                            answerDiv.style.backgroundColor = 'lightcoral';
-                          //Tidak ada jawaban yang benar, beri warna abu-abu saja
-                        }
-                    });
-                });
-                answersEl.appendChild(answerDiv);
+             if(!question) return;
+
+            questionText.textContent = question.question;
+            answersContainer.innerHTML = question.answers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
+            enableAnswerButtons();
+        }
+
+        function clearQuestion(){
+             questionText.textContent = "";
+             answersContainer.innerHTML = "";
+        }
+
+         function disableAnswerButtons() {
+            const buttons = document.querySelectorAll('.answer-button');
+            buttons.forEach(button => {
+                button.disabled = true;
             });
         }
 
-        function showMessage(message) {
-            messageEl.textContent = message;
+        function enableAnswerButtons() {
+           const buttons = document.querySelectorAll('.answer-button');
+            buttons.forEach(button => {
+                button.disabled = false;
+            });
         }
+
+        function displayError(message){
+              Swal.fire({  
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: message,
+                });
+        }
+        backToLobbyBtn.addEventListener('click', () => {
+                showLobby();
+         });
     </script>
 </body>
 </html>
