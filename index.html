@@ -9,51 +9,77 @@
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11">
     <style>
-         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Font yang lebih modern */
+           body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f0f2f5; /* Warna latar belakang yang lebih lembut */
+            background-color: #f0f2f5;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            /* justify-content: center;  <-- Hapus ini */
+            /* align-items: center;     <-- Hapus ini */
+            /* min-height: 100vh;       <-- Hapus ini */
+            flex-direction: column; /* Tambahkan ini */
         }
 
         #app {
             background-color: white;
-            padding: 30px; /* Padding lebih besar */
-            border-radius: 12px; /* Border radius yang lebih melengkung */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Box shadow yang lebih halus */
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             width: 90%;
-            max-width: 650px; /* Max-width yang sedikit lebih besar */
-            text-align: center; /* Pusatkan semua konten */
+            max-width: 650px;
+            text-align: center;
+            margin: 20px auto; /* Pusatkan secara horizontal dan beri margin atas-bawah */
+
+        }
+          /* Leaderboard */
+        #leaderboard {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 200px; /* Atur tinggi maksimal */
+            overflow-y: auto;   /* Aktifkan scrolling jika konten melebihi tinggi */
+        }
+
+        #leaderboard h3 {
+            margin-bottom: 10px;
+        }
+
+        #leaderboard-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        #leaderboard-list li {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
         }
 
         h1 {
-            color: #2e86de; /* Warna yang lebih cerah */
-            margin-bottom: 30px; /* Margin yang lebih besar */
-            font-size: 2.5em; /* Ukuran font yang lebih besar */
+            color: #2e86de;
+            margin-bottom: 30px;
+            font-size: 2.5em;
         }
         h2 {
             margin-bottom: 15px;
         }
 
         .button {
-            background-color: #2e86de; /* Warna yang konsisten dengan judul */
+            background-color: #2e86de;
             color: white;
-            padding: 12px 20px; /* Padding yang sedikit lebih besar */
+            padding: 12px 20px;
             border: none;
-            border-radius: 6px; /* Border radius yang sedikit lebih melengkung */
+            border-radius: 6px;
             cursor: pointer;
             margin: 8px;
             display: inline-block;
-            font-size: 1em; /* Ukuran font yang sedikit lebih besar */
-            transition: background-color 0.3s ease; /* Transisi yang halus */
+            font-size: 1em;
+            transition: background-color 0.3s ease;
         }
 
         .button:hover {
-            background-color: #1b4f72; /* Warna hover yang lebih gelap */
+            background-color: #1b4f72;
         }
 
         .button:disabled {
@@ -62,11 +88,11 @@
         }
 
         #room-info {
-            margin-bottom: 25px; /* Margin yang lebih besar */
+            margin-bottom: 25px;
         }
 
         #question-container {
-            margin-bottom: 25px; /* Margin yang lebih besar */
+            margin-bottom: 25px;
             border: 1px solid #ddd;
             padding: 15px;
             border-radius: 8px;
@@ -78,14 +104,14 @@
         .answer-button {
             display: block;
             width: 100%;
-            padding: 12px; /* Padding yang sedikit lebih besar */
-            margin: 6px 0; /* Margin yang sedikit lebih besar */
+            padding: 12px;
+            margin: 6px 0;
             border: 1px solid #ddd;
-            border-radius: 6px; /* Border radius yang sedikit lebih melengkung */
+            border-radius: 6px;
             cursor: pointer;
             background-color: white;
-            font-size: 1em; /* Ukuran font yang sedikit lebih besar */
-            transition: background-color 0.3s ease; /* Transisi yang halus */
+            font-size: 1em;
+            transition: background-color 0.3s ease;
         }
 
         .answer-button:hover {
@@ -95,14 +121,13 @@
         #players-list {
             list-style: none;
             padding: 0;
-            margin-top: 10px; /* Margin atas */
-
+            margin-top: 10px;
         }
 
         #players-list li {
-            padding: 8px; /* Padding yang sedikit lebih besar */
+            padding: 8px;
             border-bottom: 1px solid #eee;
-            display: flex; /* Menggunakan flexbox */
+             display: flex; /* Menggunakan flexbox */
             justify-content: space-between; /* Meletakkan username dan skor di ujung-ujung */
             align-items: center; /* Pusatkan secara vertikal */
         }
@@ -110,70 +135,71 @@
              border-bottom: none; /* Hilangkan border pada item terakhir */
          }
 
+
         #timer {
-            font-size: 1.4em; /* Ukuran font yang lebih besar */
+            font-size: 1.4em;
             font-weight: bold;
-            margin-bottom: 15px; /* Margin yang lebih besar */
-            color: #e74c3c; /* Warna merah untuk timer */
+            margin-bottom: 15px;
+            color: #e74c3c;
         }
 
         #error-message {
-            color: #e74c3c; /* Warna merah untuk error */
-            margin-top: 15px; /* Margin yang lebih besar */
+            color: #e74c3c;
+            margin-top: 15px;
+        }
+          #chat-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        #chat-messages {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        #chat-input {
+            width: 70%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #send-message-btn{
+             width: 25%;
         }
 
         /* Menyembunyikan elemen secara default */
         #lobby, #room, #game-over {
             display: none;
         }
-         /* Modal (sederhana - sebelum menggunakan SweetAlert) */
-        #username-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+         /* Tombol Logout */
+        #logout-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
         }
 
-        #username-modal-content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        #username-input{
-             width: 90%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body>
     <div id="app">
         <h1><i class="fas fa-gamepad"></i> Wanzofc Quiz</h1>
-
-         <!-- Modal Username -->
-        <div id="username-modal">
-            <div id="username-modal-content">
-                <h2>Enter Your Username</h2>
-                <input type="text" id="username-input" placeholder="Username">
-                <button class="button" id="submit-username-btn">Play</button>
-            </div>
-        </div>
+         <button class="button" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
 
         <!-- Lobby -->
         <div id="lobby">
-            <!-- <input type="text" id="username" placeholder="Your Name"> <!â€“ Tidak diperlukan lagi â€“>-->
+           <input type="text" id="username-input" placeholder="Your Name">
             <button class="button" id="create-room-btn"><i class="fas fa-plus-circle"></i> Create Room</button>
             <input type="text" id="room-id-input" placeholder="Room ID">
             <button class="button" id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Join Room</button>
              <div id="error-message"></div>
+              <!-- Leaderboard -->
+            <div id="leaderboard">
+                <h3>Leaderboard</h3>
+                <ul id="leaderboard-list"></ul>
+            </div>
         </div>
 
         <!-- Room -->
@@ -193,7 +219,13 @@
                     <!-- Tombol jawaban akan diisi di sini -->
                 </div>
             </div>
-             <button class="button" id="restart-btn" style="display: none;"><i class="fas fa-redo-alt"></i> Restart Game</button>
+            <div id="chat-container">
+                <h3>Chat</h3>
+                <div id="chat-messages"></div>
+                <input type="text" id="chat-input" placeholder="Type your message...">
+                <button class="button" id="send-message-btn">Send</button>
+            </div>
+             <button class="button" id="restart-btn" ><i class="fas fa-redo-alt"></i> Restart Game</button>
             <button class="button" id="leave-room-btn"><i class="fas fa-sign-out-alt"></i> Leave Room</button>
 
         </div>
@@ -216,7 +248,7 @@
         const lobby = document.getElementById('lobby');
         const room = document.getElementById('room');
         const gameOver = document.getElementById('game-over');
-        // const usernameInput = document.getElementById('username'); // Tidak diperlukan lagi
+        const usernameInput = document.getElementById('username-input'); // Input username di lobby
         const createRoomBtn = document.getElementById('create-room-btn');
         const roomIdInput = document.getElementById('room-id-input');
         const joinRoomBtn = document.getElementById('join-room-btn');
@@ -231,136 +263,178 @@
         const errorMessage = document.getElementById('error-message');
         const finalScoresDisplay = document.getElementById('final-scores');
         const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const leaderboardList = document.getElementById('leaderboard-list');
 
-        // Elemen modal
-        const usernameModal = document.getElementById('username-modal');
-        const usernameModalInput = document.getElementById('username-input');
-        const submitUsernameBtn = document.getElementById('submit-username-btn');
-
+        // Elemen Chat
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendMessageBtn = document.getElementById('send-message-btn');
 
         // --- State ---
         let currentRoomId = null;
         let currentUsername = null;
-        let isHost = false;
 
         // --- Cek Username di Local Storage ---
         const storedUsername = localStorage.getItem('username');
         if (storedUsername) {
             currentUsername = storedUsername;
-            showLobby(); // Langsung tampilkan lobby
+            usernameInput.value = currentUsername; // Isi input username
+            showLobby();
         } else {
-            showUsernameModal(); // Tampilkan modal jika belum ada username
+            showLobby(); // Tetap tampilkan lobby, tapi mungkin sembunyikan tombol create/join dulu
         }
 
         // --- Event Handlers ---
 
-        // Submit Username (Modal)
-        submitUsernameBtn.addEventListener('click', () => {
-            const username = usernameModalInput.value.trim();
-            if (username) {
-                currentUsername = username;
-                localStorage.setItem('username', username); // Simpan di localStorage
-                usernameModal.style.display = 'none'; // Sembunyikan modal
-                showLobby();
-            } else {
-                // alert('Please enter a username.');
-                 Swal.fire({  // Pakai SweetAlert
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: 'Please enter a username!',
-                });
-            }
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('username');
+            currentUsername = null;
+            socket.disconnect(); // Putuskan koneksi
+            window.location.reload(); // Muat ulang (cara sederhana)
         });
 
-
+        // Create Room
         createRoomBtn.addEventListener('click', () => {
-            // const username = usernameInput.value.trim(); // Tidak diperlukan lagi
-            const roomName = prompt("Enter room name (optional):");
-            if (currentUsername) {
-                socket.emit('createRoom', currentUsername, roomName, (response) => {
-                    if (response.success) {
-                        currentRoomId = response.roomId;
-                         isHost = true; //Set sebagai host.
-                        showRoom();
-                        restartBtn.style.display = 'inline-block'; // Tampilkan tombol restart untuk host
-                    } else {
-                        // alert(response.message);
-                         displayError(response.message);
-                    }
+            const username = usernameInput.value.trim();
+             if (!username) {
+                Swal.fire({
+                    icon: 'warning',
+                    text: 'Please enter a username first.'
                 });
-            } else {
-                // Harusnya tidak akan pernah sampai sini, karena ada modal username
-                showUsernameModal();
+                return;
             }
+
+            currentUsername = username;
+            localStorage.setItem('username', currentUsername);
+
+
+            const roomName = prompt("Enter room name (optional):");
+            socket.emit('createRoom', currentUsername, roomName, (response) => {
+                if (response.success) {
+                    currentRoomId = response.roomId;
+                    showRoom();
+                } else {
+                    displayError(response.message);
+                }
+            });
         });
 
+        // Join Room
         joinRoomBtn.addEventListener('click', () => {
-            // const username = usernameInput.value.trim(); // Tidak diperlukan lagi
+            const username = usernameInput.value.trim();
+            if (!username) {
+                Swal.fire({
+                    icon: 'warning',
+                    text: 'Please enter a username first.'
+                });
+                return;
+            }
+            currentUsername = username;
+            localStorage.setItem('username', currentUsername);
             const roomId = roomIdInput.value.trim().toUpperCase();
-            if (currentUsername && roomId) {
+            if (roomId) {
                 socket.emit('joinRoom', roomId, currentUsername, (response) => {
                     if (response.success) {
                         currentRoomId = roomId;
-                        isHost = false;
                         showRoom();
                     } else {
-                        // alert(response.message);
-                         displayError(response.message);
+                        displayError(response.message);
                     }
                 });
             } else {
-                // alert('Please enter a username and room ID.');
-                displayError("silakan masukkan nama pengguna dan ID kamar")
+                 Swal.fire({
+                    icon:"warning",
+                    text: "Silahkan masukkan id room"
+                })
             }
         });
 
+        // Answer Question
         answersContainer.addEventListener('click', (event) => {
             if (event.target.classList.contains('answer-button')) {
-                const answerIndex = parseInt(event.target.dataset.index);
+                 const answerIndex = parseInt(event.target.dataset.index);
+                if (answerIndex === undefined) return;
+
+                disableAnswerButtons();
                 socket.emit('answerQuestion', answerIndex, (response) => {
-                  disableAnswerButtons();
+                  if(response.success){
+                    if(response.correct){
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Correct!',
+                            text: `Your score: ${response.score}`,
+                            timer: 1500,
+                            showConfirmButton: false
+
+                        })
+                    } else {
+                        Swal.fire({
+                            icon:"error",
+                            title: "Incorrect!",
+                            text: `Your score: ${response.score}`,
+                            timer: 1500,
+                            showConfirmButton: false
+                        })
+                    }
+                  } else {
+                     displayError(response.message);
+                  }
                 });
             }
         });
 
+        // Leave Room
         leaveRoomBtn.addEventListener('click', () => {
             socket.emit('leaveRoom');
             showLobby();
         });
-         restartBtn.addEventListener('click', ()=>{
-             socket.emit('restartGame');
-        })
+
+        // Restart Game
+        restartBtn.addEventListener('click', () => {
+            socket.emit('restartGame');
+        });
+        // Kirim Pesan Chat
+        sendMessageBtn.addEventListener('click', () => {
+            const message = chatInput.value;
+            if (message.trim()) {
+                socket.emit('chatMessage', message);
+                chatInput.value = '';
+            }
+        });
+         backToLobbyBtn.addEventListener('click', () => {
+                showLobby();
+         });
 
         // --- Socket.IO Event Listeners ---
+
+        // Room Info
         socket.on('roomInfo', (data) => {
             roomNameDisplay.textContent = data.roomName;
             roomIdDisplay.textContent = data.roomId;
-            playersList.innerHTML = data.users.map(user => `
-                <li>
-                    <span>${user.username}</span>
-                    <span>${user.score}</span>
-                </li>
-            `).join('');
+            playersList.innerHTML = data.users.map(user => `<li><span>${user.username}</span><span>${user.score}</span></li>`).join('');
             timerDisplay.textContent = `Time left: ${data.timeLeft}s`;
-
              // Tampilkan pertanyaan pertama saat pertama kali join
             if(data.currentQuestionIndex === 1) {
                 displayQuestion(data.questions ? data.questions[0] : null); //Cek jika questions ada.
             }
+
         });
 
+        // Next Question
         socket.on('nextQuestion', (question) => {
             displayQuestion(question);
-             //Hapus notif sebelumnya, JIKA ADA.
-            Swal.close();
+             Swal.close();
         });
 
+        // Game Over
         socket.on('gameOver', (scores) => {
-            const myScore = scores.find(user => user.username === currentUsername);
-            const highestScore = Math.max(...scores.map(user => user.score)); //Cari score tertinggi.
+             const myScore = scores.find(user => user.username === currentUsername);
+            const highestScore = Math.max(...scores.map(user => user.score));
 
             if(myScore && myScore.score === highestScore){
-                 
+
                 Swal.fire({
                     icon: 'success',
                     title: 'Congratulations!',
@@ -373,30 +447,39 @@
                     text: 'kamu kalah!',
                 });
             }
-
             finalScoresDisplay.innerHTML = scores.map(user => `<li>${user.username} : ${user.score}</li>`).join('');
             showGameOver();
         });
 
-         socket.on('gameRestarted', (question)=>{
-             showRoom();
-             displayQuestion(question);
-              Swal.close(); 
-
+        // Game Restarted
+        socket.on('gameRestarted', (question) => {
+            showRoom();
+            displayQuestion(question);
+            Swal.close();
+        });
+         // Leaderboard Update
+        socket.on('leaderboardUpdate', (leaderboard) => {
+            leaderboardList.innerHTML = leaderboard.map(user => `<li>${user.username}: ${user.score}</li>`).join('');
         });
 
-        socket.on('error', (message) => {
-            displayError(message)
-        })
-        function showUsernameModal() {
-            usernameModal.style.display = 'flex'; // Tampilkan modal
-            usernameModalInput.focus(); // Fokuskan ke input
-        }
+        // Chat Message
+        socket.on('chatMessage', (data) => {
+            const messageElement = document.createElement('div');
+            messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message} <small>(${data.timestamp.toLocaleString()})</small>`;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
 
+        // Error
+        socket.on('error', (message) => {
+           displayError(message)
+        });
+
+        // --- Functions ---
         function showLobby() {
             lobby.style.display = 'block';
             room.style.display = 'none';
-             gameOver.style.display = 'none';
+            gameOver.style.display = 'none';
             currentRoomId = null;
              clearQuestion();
         }
@@ -404,21 +487,23 @@
         function showRoom() {
             lobby.style.display = 'none';
             room.style.display = 'block';
-             gameOver.style.display = 'none';
+            gameOver.style.display = 'none';
         }
-        function showGameOver(){
-             lobby.style.display = 'none';
-             room.style.display = 'none';
-             gameOver.style.display = 'block';
-             clearQuestion(); //Bersihkan pertanyaan
+
+        function showGameOver() {
+            lobby.style.display = 'none';
+            room.style.display = 'none';
+            gameOver.style.display = 'block';
+              clearQuestion();
         }
 
         function displayQuestion(question) {
-             if(!question) return;
+            if (!question) return;
 
             questionText.textContent = question.question;
             answersContainer.innerHTML = question.answers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
             enableAnswerButtons();
+             speak(question.question); // Text-to-speech
         }
 
         function clearQuestion(){
@@ -426,30 +511,43 @@
              answersContainer.innerHTML = "";
         }
 
-         function disableAnswerButtons() {
-            const buttons = document.querySelectorAll('.answer-button');
-            buttons.forEach(button => {
+        function disableAnswerButtons() {
+            document.querySelectorAll('.answer-button').forEach(button => {
                 button.disabled = true;
             });
         }
 
         function enableAnswerButtons() {
-           const buttons = document.querySelectorAll('.answer-button');
-            buttons.forEach(button => {
+            document.querySelectorAll('.answer-button').forEach(button => {
                 button.disabled = false;
             });
         }
-
         function displayError(message){
-              Swal.fire({  
-                    icon: 'error',
-                    title: 'Oops...',
-                    text: message,
-                });
+            Swal.fire({
+                icon:"error",
+                title: "Oops..",
+                text: message
+            })
         }
-        backToLobbyBtn.addEventListener('click', () => {
-                showLobby();
-         });
+
+        // Text-to-Speech
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID'; // Set ke bahasa Indonesia
+
+                //Coba dapatkan suara perempuan (jika ada)
+                const voices = window.speechSynthesis.getVoices();
+                const femaleVoice = voices.find(voice => voice.lang === 'id-ID' && voice.name.toLowerCase().includes('female'));
+                if(femaleVoice){
+                     utterance.voice = femaleVoice;
+                }
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.warn('Text-to-speech not supported.');
+            }
+        }
     </script>
 </body>
 </html>
