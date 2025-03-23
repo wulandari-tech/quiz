@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wanzofc Quiz</title>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11">
     <style>
-         body {
+        body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
@@ -116,6 +114,12 @@
         .answer-button:hover {
             background-color: #f0f0f0;
         }
+         .answer-button:disabled {
+             background-color: #eee; /* Warna abu-abu muda */
+            border-color: #ddd;       /* Warna border yang lebih terang */
+            color: #999;              /* Warna teks abu-abu */
+            cursor: not-allowed;     /* Kursor "not-allowed" */
+        }
 
         #players-list {
             list-style: none;
@@ -180,14 +184,59 @@
             top: 10px;
             right: 10px;
         }
-
-        .profile-pic {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
-            object-fit: cover;
+        /* Styling Foto Profil */
+        .profile-pic-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px; /* Beri jarak antara input dan tombol */
         }
+        .profile-pic {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #2e86de; /* Border biru */
+            margin-right: 10px;
+        }
+
+        /* Placeholder sebelum gambar dipilih */
+        .profile-pic-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+            color: #777;
+        }
+
+        #profile-pic-input {
+            display: none; /* Sembunyikan input file asli */
+        }
+         #profile-pic-label {
+            background-color: #2e86de;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block; /* Penting agar sejajar dengan placeholder */
+        }
+        #profile-pic-label:hover{
+            background-color: #1b4f72;
+        }
+         /* Preview Image */
+        #profile-pic-preview {
+            max-width: 200px; /* Batasi lebar preview */
+            max-height: 200px;
+            margin-top: 10px;
+            display: none; /* Sembunyikan secara default */
+            border: 2px solid #ddd;
+             border-radius: 8px;
+        }
+
+
     </style>
 </head>
 <body>
@@ -197,8 +246,16 @@
 
         <!-- Lobby -->
         <div id="lobby">
-            <input type="text" id="username-input" placeholder="Your Name">
-            <input type="file" id="profile-pic-input" accept="image/*">
+           <div class="profile-pic-container">
+                <label for="profile-pic-input" id="profile-pic-label">
+                    <div class="profile-pic-placeholder"><i class="fas fa-user"></i></div> <!-- Placeholder -->
+                </label>
+                 <input type="text" id="username-input" placeholder="Your Name">
+                <input type="file" id="profile-pic-input" accept="image/*">
+            </div>
+
+            <img id="profile-pic-preview" src="#" alt="Profile Picture Preview">
+
             <button class="button" id="create-room-btn"><i class="fas fa-plus-circle"></i> Create Room</button>
             <input type="text" id="room-id-input" placeholder="Room ID">
             <button class="button" id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Join Room</button>
@@ -259,6 +316,8 @@
         const gameOver = document.getElementById('game-over');
         const usernameInput = document.getElementById('username-input');
         const profilePicInput = document.getElementById('profile-pic-input');
+        const profilePicLabel = document.getElementById('profile-pic-label'); // Label untuk input file
+        const profilePicPreview = document.getElementById('profile-pic-preview'); // Elemen preview
         const createRoomBtn = document.getElementById('create-room-btn');
         const roomIdInput = document.getElementById('room-id-input');
         const joinRoomBtn = document.getElementById('join-room-btn');
@@ -283,6 +342,7 @@
         let currentRoomId = null;
         let currentUsername = null;
         let profilePicDataUrl = null;
+        let hasAnswered = false; // Flag untuk menandai apakah user sudah menjawab
 
         const storedUsername = localStorage.getItem('username');
         if (storedUsername) {
@@ -294,14 +354,31 @@
         }
 
         // --- Event Handlers ---
-
+         // Event listener untuk input file, dengan preview dan validasi ukuran
         profilePicInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
+                // Validasi ukuran file (contoh: maksimal 2MB)
+                const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+                if (file.size > maxSize) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File too large!',
+                        text: 'Please choose an image smaller than 2MB.'
+                    });
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     profilePicDataUrl = e.target.result;
-                    // Optional: Tampilkan preview
+
+                    // Tampilkan preview
+                    profilePicPreview.src = profilePicDataUrl;
+                    profilePicPreview.style.display = 'block';
+
+                    // Ganti placeholder dengan gambar profil
+                    profilePicLabel.innerHTML = `<img src="${profilePicDataUrl}" alt="Profile Pic" class="profile-pic">`;
                 };
                 reader.readAsDataURL(file);
             }
@@ -373,13 +450,14 @@
             }
         });
 
+        // Event listener untuk klik pada kontainer jawaban
         answersContainer.addEventListener('click', (event) => {
-             if (event.target.classList.contains('answer-button')) {
+            if (event.target.classList.contains('answer-button') && !hasAnswered) {
+                hasAnswered = true; // Set flag menjadi true
+                disableAnswerButtons(); // Disable semua tombol
                 const answerIndex = parseInt(event.target.dataset.index);
-                 if (answerIndex === undefined) return;
-                disableAnswerButtons();
-
                 socket.emit('answerQuestion', answerIndex, (response) => {
+                    // ... (respons dari server, SweetAlert, dll.)
                      if(response.success){
                         if(response.correct){
                              Swal.fire({
@@ -445,9 +523,11 @@
             }
         });
 
+        // Modifikasi nextQuestion
         socket.on('nextQuestion', (question) => {
+            hasAnswered = false; // Reset flag
             displayQuestion(question);
-             Swal.close();
+            Swal.close();
         });
 
         socket.on('gameOver', (scores) => {
@@ -474,6 +554,7 @@
 
         socket.on('gameRestarted', (question) => {
             showRoom();
+             hasAnswered = false;
             displayQuestion(question);
              Swal.close();
         });
@@ -550,13 +631,17 @@
             answersContainer.innerHTML = translatedAnswers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
             enableAnswerButtons();
             speak(translatedQuestion.text); // Text-to-speech setelah terjemahan
+            currentSpeakText = translatedQuestion.text;// Simpan text yang diucapkan
+
         } catch (error) {
             console.error("Translation error:", error);
             // Tampilkan pertanyaan asli jika terjemahan gagal
             questionText.innerHTML = question.question;
             answersContainer.innerHTML = question.answers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
             enableAnswerButtons();
-            speak(question.question);  // Bicara pertanyaan asli
+            speak(question.question);
+            currentSpeakText = question.question;// Simpan text yang diucapkan
+
         }
     }
 
@@ -565,8 +650,8 @@
             answersContainer.innerHTML = "";
         }
 
-        function disableAnswerButtons() {
-             document.querySelectorAll('.answer-button').forEach(button => {
+       function disableAnswerButtons() {
+            document.querySelectorAll('.answer-button').forEach(button => {
                 button.disabled = true;
             });
         }
@@ -584,19 +669,21 @@
                 text: message
             })
         }
-
+        let currentSpeakText = null; // Variabel global untuk menyimpan teks yang sedang diucapkan
         function speak(text) {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'id-ID';
+            if ('speechSynthesis' in window ) {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'id-ID';
+                     const voices = window.speechSynthesis.getVoices();
+                    const femaleVoice = voices.find(voice => voice.lang === 'id-ID' && voice.name.toLowerCase().includes('female'));
+                    if (femaleVoice) {
+                        utterance.voice = femaleVoice;
+                    }
+                    // Hentikan ucapan sebelumnya (jika ada)
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.speak(utterance);
 
-                const voices = window.speechSynthesis.getVoices();
-                const femaleVoice = voices.find(voice => voice.lang === 'id-ID' && voice.name.toLowerCase().includes('female'));
-                if (femaleVoice) {
-                    utterance.voice = femaleVoice;
-                }
 
-                window.speechSynthesis.speak(utterance);
             } else {
                 console.warn('Text-to-speech not supported.');
             }
