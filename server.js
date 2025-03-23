@@ -19,7 +19,7 @@ const USERS_FILE = 'users.json';
 const ROOMS_FILE = 'rooms.json';
 
 // Konfigurasi Google Cloud Translation (GANTI DENGAN KREDENSIAL ANDA)
-const projectId = 'YOUR_PROJECT_ID'; // Ganti dengan project ID Anda
+const projectId = 'symbolic-math-454622-q7'; // Ganti dengan project ID Anda
 const translate = new Translate({ projectId });
 
 
