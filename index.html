@@ -143,7 +143,6 @@
         }
 
         #timer {
-
              display: none;
         }
 
@@ -234,27 +233,6 @@
              border-radius: 8px;
         }
 
-        /* Progress Bar */
-        #progress-bar-container {
-            width: 100%;
-            background-color: #ddd;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            overflow: hidden;
-        }
-
-        #progress-bar {
-            width: 0%;
-            height: 20px;
-            background-color: #2e86de;
-            text-align: center;
-            line-height: 20px;
-            color: white;
-            /* transition: width 0.5s ease;  <- Ganti dengan yang di bawah */
-            transition: width 0.05s linear; /* Update lebih sering, linear */
-        }
-
-
     </style>
 </head>
 <body>
@@ -288,10 +266,6 @@
         <!-- Room -->
         <div id="room">
             <h2 id="room-name"></h2>
-             <div id="timer"></div>
-            <div id="progress-bar-container">
-                <div id="progress-bar"></div>
-            </div>
             <div id="room-info">
                 <p>Room ID: <span id="room-id-display"></span></p>
                 <p>Players:</p>
@@ -348,7 +322,6 @@
         const answersContainer = document.getElementById('answers-container');
         const leaveRoomBtn = document.getElementById('leave-room-btn');
         const restartBtn = document.getElementById('restart-btn');
-        const timerDisplay = document.getElementById('timer');
         const errorMessage = document.getElementById('error-message');
         const finalScoresDisplay = document.getElementById('final-scores');
         const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
@@ -357,15 +330,14 @@
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const sendMessageBtn = document.getElementById('send-message-btn');
-        const progressBar = document.getElementById('progress-bar');
 
         // --- State ---
         let currentRoomId = null;
         let currentUsername = null;
         let profilePicDataUrl = null;
         let hasAnswered = false;
-        let questionStartTime = null; // Waktu mulai pertanyaan (timestamp)
-        let progressIntervalId = null; // ID untuk clearInterval
+        let questionStartTime = null; // Tetap ada, tapi untuk speech, bukan animasi
+
 
         const storedUsername = localStorage.getItem('username');
         if (storedUsername) {
@@ -487,22 +459,31 @@
         backToLobbyBtn.addEventListener('click',() => {
             showLobby();
         })
-
+        let isRoomInfoReceived = false;
         // --- Socket.IO Event Listeners ---
         socket.on('roomInfo', (data) => {
             roomNameDisplay.textContent = data.roomName;
             roomIdDisplay.textContent = data.roomId;
             playersList.innerHTML = data.users.map(user => `<li><img src="${user.profilePic || 'default-avatar.png'}" alt="Profile Pic" class="profile-pic"><span>${user.username}</span><span>${user.score}</span></li>`).join('');
 
-            //Hapus update progress bar dari sini
+            //Hapus kode yang berhubungan dengan progress bar
 
-            if (data.currentQuestionIndex === 1) {
-                setTimeout(() => displayQuestion(data.questions ? data.questions[0] : null), 500);
+            // if (data.currentQuestionIndex === 1) { //Jalankan hanya sekali, setelah join room
+            //     setTimeout(() => displayQuestion(data.questions ? data.questions[0] : null), 500);
+            // }
+              if (!isRoomInfoReceived) {
+                isRoomInfoReceived = true; // Set flag menjadi true
+                if (data.currentQuestionIndex === 1) {
+                    setTimeout(() => {
+                        displayQuestion(data.questions ? data.questions[0] : null);
+                    }, 500); // Tunda 0.5 detik, sesuaikan
+                }
             }
         });
 
         socket.on('nextQuestion', (question) => {
             hasAnswered = false;
+            questionStartTime = null; // Reset waktu mulai
             setTimeout(() => displayQuestion(question), 500);
             Swal.close();
         });
@@ -522,6 +503,7 @@
         socket.on('gameRestarted', (question) => {
             showRoom();
              hasAnswered = false;
+            questionStartTime = null; // Reset waktu mulai
             setTimeout(() => displayQuestion(question), 500);
              Swal.close();
         });
@@ -576,9 +558,7 @@
       async function displayQuestion(question) {
         if (!question) return;
 
-        // Set waktu mulai pertanyaan
-        questionStartTime = Date.now();
-        startProgressBarAnimation(); // Mulai animasi
+        questionStartTime = Date.now(); // Simpan waktu mulai, TAPI tidak untuk animasi
 
         try {
             const translatedQuestion = await translate(question.question, { to: 'id' });
@@ -586,20 +566,21 @@
             const translatedAnswers = await Promise.all(question.answers.map(async (answer) => (await translate(answer, { to: 'id' })).text));
             answersContainer.innerHTML = translatedAnswers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
             enableAnswerButtons();
-            speak(translatedQuestion.text);
+            speak(translatedQuestion.text); // Panggil setelah terjemahan SELESAI
         } catch (error) {
             console.error("Translation error:", error);
             questionText.innerHTML = question.question;
             answersContainer.innerHTML = question.answers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
             enableAnswerButtons();
-            speak(question.question);
+            speak(question.question); // Panggil setelah terjemahan SELESAI
         }
     }
 
         function clearQuestion() {
             questionText.textContent = "";
             answersContainer.innerHTML = "";
-             stopProgressBarAnimation(); //Hentikan animasi
+            //  stopProgressBarAnimation(); //Tidak perlu lagi
+            questionStartTime = null; // Reset waktu mulai
         }
 
        function disableAnswerButtons() {
@@ -624,8 +605,9 @@
                     if (femaleVoice) {
                         utterance.voice = femaleVoice;
                     }
-                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.cancel(); // Hentikan yang sebelumnya (penting)
                     window.speechSynthesis.speak(utterance);
+
             } else {
                 console.warn('Text-to-speech not supported.');
             }
@@ -640,29 +622,6 @@
                 profilePicLabel.innerHTML = `<img src="${profilePicDataUrl}" alt="Profile Pic" class="profile-pic">`;
                 profilePicPreview.src = profilePicDataUrl;
                 profilePicPreview.style.display = 'block';
-            }
-        }
-
-        // Fungsi untuk update progress bar (dipanggil dengan interval sering)
-        function updateProgressBar() {
-            if (!questionStartTime) return;
-
-            const elapsedTime = Date.now() - questionStartTime;
-            const percentage = Math.min(100, (elapsedTime / 30000) * 100); // Hitung persentase, maksimal 100%
-            progressBar.style.width = `${100 - percentage}%`; // Balik persentase agar berkurang dari kiri
-        }
-         // Fungsi untuk memulai animasi progress bar
-        function startProgressBarAnimation() {
-            stopProgressBarAnimation(); // Hentikan animasi sebelumnya (jika ada)
-            questionStartTime = Date.now(); // Set waktu mulai
-            progressIntervalId = setInterval(updateProgressBar, 50); // Update setiap 50ms
-        }
-
-        // Fungsi untuk menghentikan animasi progress bar
-        function stopProgressBarAnimation() {
-             if (progressIntervalId) {
-                clearInterval(progressIntervalId);
-                progressIntervalId = null;
             }
         }
 
