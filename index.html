@@ -246,7 +246,8 @@
         </div>
     </div>
 
-    <!-- Hapus translator.js -->
+    <!-- Sertakan library google-translate-api-browser (gunakan CDN atau download manual) -->
+    <script src="https://cdn.jsdelivr.net/gh/vitalets/google-translate-api-browser/dist/google-translate-api-browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -446,7 +447,6 @@
 
         socket.on('nextQuestion', (question) => {
             displayQuestion(question);
-            speak(question.question); // Text to speach
              Swal.close();
         });
 
@@ -531,14 +531,34 @@
             clearQuestion();
         }
 
-        function displayQuestion(question) {
-            if (!question) return;
+      async function displayQuestion(question) {
+        if (!question) return;
 
-            questionText.innerHTML = question.question; // Gunakan innerHTML
+        try {
+            // Terjemahkan pertanyaan
+            const translatedQuestion = await translate(question.question, { to: 'id' });
+            questionText.innerHTML = translatedQuestion.text;
+
+            // Terjemahkan jawaban
+            const translatedAnswers = await Promise.all(
+                question.answers.map(async (answer) => {
+                    const translatedAnswer = await translate(answer, { to: 'id' });
+                    return translatedAnswer.text;
+                })
+            );
+
+            answersContainer.innerHTML = translatedAnswers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
+            enableAnswerButtons();
+            speak(translatedQuestion.text); // Text-to-speech setelah terjemahan
+        } catch (error) {
+            console.error("Translation error:", error);
+            // Tampilkan pertanyaan asli jika terjemahan gagal
+            questionText.innerHTML = question.question;
             answersContainer.innerHTML = question.answers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
             enableAnswerButtons();
-            // speak(question.question); // Pindahkan ke nextQuestion
+            speak(question.question);  // Bicara pertanyaan asli
         }
+    }
 
         function clearQuestion() {
             questionText.textContent = "";
