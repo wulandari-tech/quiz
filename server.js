@@ -2,8 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const fetch = require('node-fetch');
-const fs = require('fs');
-const { Translate } = require('@google-cloud/translate').v2; // Import library
+const fs = require('fs'); // Untuk operasi file
 
 const app = express();
 const server = http.createServer(app);
@@ -15,21 +14,18 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3001;
+
 const USERS_FILE = 'users.json';
 const ROOMS_FILE = 'rooms.json';
 
-// Konfigurasi Google Cloud Translation (GANTI DENGAN KREDENSIAL ANDA)
-const projectId = 'symbolic-math-454622-q7'; // Ganti dengan project ID Anda
-const translate = new Translate({ projectId });
-
-
-// Fungsi bantu untuk membaca dan menulis file
+// Fungsi bantu untuk membaca dan menulis file JSON
 function loadData(filename) {
     try {
         if (fs.existsSync(filename)) {
             const data = fs.readFileSync(filename, 'utf8');
             return JSON.parse(data);
         } else {
+            // Buat file baru jika belum ada
             fs.writeFileSync(filename, '{}', 'utf8');
             return {};
         }
@@ -47,14 +43,16 @@ function saveData(filename, data) {
     }
 }
 
+// Load data dari file saat server start
 let users = loadData(USERS_FILE);
 let rooms = loadData(ROOMS_FILE);
 
+// Fungsi untuk generate room ID
 function generateRoomId() {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
 }
 
-// Fungsi untuk fetch dan menerjemahkan pertanyaan
+// Fungsi untuk fetch pertanyaan (kembali ke versi asli, tanpa terjemahan)
 async function fetchQuestions(amount = 10, category = null, difficulty = null, type = null) {
     let url = `https://opentdb.com/api.php?amount=${amount}`;
     if (category) url += `&category=${category}`;
@@ -66,25 +64,7 @@ async function fetchQuestions(amount = 10, category = null, difficulty = null, t
         const data = await response.json();
 
         if (data.response_code === 0) {
-            // Terjemahkan pertanyaan dan jawaban di server
-            const translatedResults = await Promise.all(data.results.map(async item => {
-                const [translatedQuestion] = await translate.translate(item.question, 'id');
-                const [translatedCorrectAnswer] = await translate.translate(item.correct_answer, 'id');
-                const translatedIncorrectAnswers = await Promise.all(
-                    item.incorrect_answers.map(async ans => {
-                        const [translatedAns] = await translate.translate(ans, 'id');
-                        return translatedAns;
-                    })
-                );
-
-                return {
-                    question: translatedQuestion,
-                    correct_answer: translatedCorrectAnswer,
-                    incorrect_answers: translatedIncorrectAnswers
-                };
-            }));
-
-            return translatedResults.map(item => {
+            return data.results.map(item => {
                 const answers = [...item.incorrect_answers, item.correct_answer];
                 answers.sort(() => Math.random() - 0.5);
                 const correctIndex = answers.indexOf(item.correct_answer);
@@ -95,44 +75,48 @@ async function fetchQuestions(amount = 10, category = null, difficulty = null, t
                     correct: correctIndex
                 };
             });
-
         } else {
             console.error("Error fetching questions from OTDB:", data.response_code);
             return [];
         }
     } catch (error) {
-        console.error("Error fetching/translating questions:", error);
+        console.error("Error fetching questions:", error);
         return [];
     }
 }
 
-// ... (sisa kode server.js, sama seperti sebelumnya, kecuali fetchQuestions)
 
+
+// Serve static files
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
+// Fungsi untuk mendapatkan leaderboard, dengan foto profil
 function getLeaderboard() {
     return Object.values(users)
         .sort((a, b) => b.score - a.score)
         .slice(0, 10)
-        .map(user => ({
+        .map(user => ({ // Tambahkan profilePic ke sini
             username: user.username,
             score: user.score,
-            profilePic: user.profilePic || 'default-avatar.png'
+            profilePic: user.profilePic || 'default-avatar.png' // Gambar default
         }));
 }
 
+// Fungsi untuk mengirim leaderboard
 function sendLeaderboard() {
     io.emit('leaderboardUpdate', getLeaderboard());
 }
 
+// Fungsi untuk mengirim informasi room
+// Fungsi untuk mengirim informasi room, dengan foto profil
 function updateRoomInfo(roomId) {
     if (rooms[roomId]) {
         const userList = Object.values(rooms[roomId].users).map(user => ({
             username: user.username,
             score: user.score,
-            profilePic: user.profilePic || 'default-avatar.png'
+            profilePic: user.profilePic || 'default-avatar.png' // Sertakan profilePic
         }));
 
         io.to(roomId).emit('roomInfo', {
@@ -148,19 +132,21 @@ function updateRoomInfo(roomId) {
     }
 }
 
+// Fungsi untuk memulai timer
 function startTimer(roomId) {
     if (!rooms[roomId]) return;
 
     rooms[roomId].timeLeft = 30;
     updateRoomInfo(roomId);
 
+    // Hentikan timer sebelumnya jika ada
     if (rooms[roomId].timer) {
         clearInterval(rooms[roomId].timer);
     }
 
     rooms[roomId].timer = setInterval(() => {
         if (!rooms[roomId]) {
-          clearInterval(rooms[roomId].timer);
+          clearInterval(rooms[roomId].timer); // Tambahan: Hentikan timer jika room tidak ada
           return;
         }
         rooms[roomId].timeLeft--;
@@ -173,6 +159,7 @@ function startTimer(roomId) {
     }, 1000);
 }
 
+// Fungsi untuk pindah ke pertanyaan berikutnya
 function moveToNextQuestion(roomId) {
     if (!rooms[roomId]) return;
 
@@ -190,11 +177,14 @@ function moveToNextQuestion(roomId) {
     }
 }
 
+// Socket.IO event handlers
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
+    // Kirim leaderboard saat user pertama kali connect
     sendLeaderboard();
 
+    // Create Room
     socket.on('createRoom', async (username, roomName, callback) => {
         username = username.trim();
         if (!username) {
@@ -214,6 +204,7 @@ io.on('connection', (socket) => {
                 timer: null,
                 timeLeft: 30,
             };
+            // Update data user (tambahkan roomId)
             if(!users[socket.id]){
                 users[socket.id] = { username, score: 0, profilePic: null, roomId };
             } else {
@@ -233,6 +224,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Join Room
     socket.on('joinRoom', (roomId, username, callback) => {
         username = username.trim();
 
@@ -253,6 +245,7 @@ io.on('connection', (socket) => {
             }
               rooms[roomId].users[socket.id] = { username, score: 0,  profilePic: null};
 
+            // Update user data
             if(!users[socket.id]){
                 users[socket.id] = { username, score: 0,  profilePic: null, roomId};
             }else {
@@ -271,6 +264,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Answer Question
     socket.on('answerQuestion', (answerIndex, callback) => {
         const user = users[socket.id];
         if (!user || !rooms[user.roomId]) {
@@ -284,17 +278,18 @@ io.on('connection', (socket) => {
 
         if (answerIndex === currentQuestion.correct) {
             rooms[user.roomId].users[socket.id].score += 10;
-            users[socket.id].score += 10;
+            users[socket.id].score += 10; // Update juga di users.
              callback({ success: true, correct: true, score: users[socket.id].score });
         } else {
             callback({ success: true, correct: false, score: users[socket.id].score });
         }
           saveData(USERS_FILE, users);
           saveData(ROOMS_FILE, rooms);
-         sendLeaderboard();
+         sendLeaderboard(); // Update leaderboard setelah menjawab
     });
 
-    socket.on('restartGame', async () => {
+    // Restart Game (semua pemain bisa restart) -> Next
+    socket.on('restartGame', async () => { // Ganti nama event
         const user = users[socket.id];
         if (!user || !rooms[user.roomId]) return;
         const room = rooms[user.roomId];
@@ -305,12 +300,12 @@ io.on('connection', (socket) => {
             return;
         }
 
-        room.questionIndex = 0;
-        room.questions = newQuestions;
+        room.questionIndex = 0; // Reset index
+        room.questions = newQuestions; // Ganti pertanyaan
         room.timeLeft = 30;
 
         for (let userId in room.users) {
-            room.users[userId].score = 0;
+            room.users[userId].score = 0; // Reset score di ROOM
         }
 
         saveData(ROOMS_FILE, rooms);
@@ -322,35 +317,42 @@ io.on('connection', (socket) => {
         io.to(user.roomId).emit('gameRestarted', room.questions[0]);
     });
 
+      // Update Profile (Foto)
     socket.on('updateProfile', (data) => {
         const user = users[socket.id];
         if (user) {
             user.profilePic = data.profilePic;
             saveData(USERS_FILE, users);
 
+            // Broadcast ke semua klien di room
             if (user.roomId) {
                 io.to(user.roomId).emit('profileUpdated', { userId: socket.id, profilePic: data.profilePic });
             }
-            sendLeaderboard();
+            sendLeaderboard(); // Update leaderboard
         }
     });
 
+
+    // Leave Room
     socket.on('leaveRoom', () => {
         handleLeaveRoom(socket);
     });
 
+    // Disconnect
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         handleLeaveRoom(socket);
     });
 
+     // Handle Leave Room (disederhanakan)
     function handleLeaveRoom(socket) {
         const user = users[socket.id];
         if (user) {
             const roomId = user.roomId;
             if (rooms[roomId]) {
-                delete rooms[roomId].users[socket.id];
+                delete rooms[roomId].users[socket.id]; // Hapus user dari room
 
+                // Jika room kosong, hapus room (opsional)
                 if (Object.keys(rooms[roomId].users).length === 0) {
                     delete rooms[roomId];
                 } else {
@@ -364,6 +366,7 @@ io.on('connection', (socket) => {
         }
     }
 
+    // Chat Message
     socket.on('chatMessage', (message) => {
         const user = users[socket.id];
         if (user && rooms[user.roomId]) {
