@@ -9,16 +9,13 @@
     <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11">
     <style>
-           body {
+         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f0f2f5;
             display: flex;
-            /* justify-content: center;  <-- Hapus ini */
-            /* align-items: center;     <-- Hapus ini */
-            /* min-height: 100vh;       <-- Hapus ini */
-            flex-direction: column; /* Tambahkan ini */
+            flex-direction: column;
         }
 
         #app {
@@ -29,17 +26,16 @@
             width: 90%;
             max-width: 650px;
             text-align: center;
-            margin: 20px auto; /* Pusatkan secara horizontal dan beri margin atas-bawah */
-
+            margin: 20px auto;
         }
-          /* Leaderboard */
+
         #leaderboard {
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
             margin-top: 20px;
-            max-height: 200px; /* Atur tinggi maksimal */
-            overflow-y: auto;   /* Aktifkan scrolling jika konten melebihi tinggi */
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         #leaderboard h3 {
@@ -50,10 +46,11 @@
             list-style: none;
             padding: 0;
         }
-
-        #leaderboard-list li {
+         #leaderboard-list li {
             padding: 8px;
             border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
         }
 
         h1 {
@@ -61,6 +58,7 @@
             margin-bottom: 30px;
             font-size: 2.5em;
         }
+
         h2 {
             margin-bottom: 15px;
         }
@@ -97,9 +95,10 @@
             padding: 15px;
             border-radius: 8px;
         }
-          #question-text {
-             margin-bottom: 20px;
-         }
+
+        #question-text {
+            margin-bottom: 20px;
+        }
 
         .answer-button {
             display: block;
@@ -122,19 +121,20 @@
             list-style: none;
             padding: 0;
             margin-top: 10px;
+
         }
 
         #players-list li {
             padding: 8px;
             border-bottom: 1px solid #eee;
-             display: flex; /* Menggunakan flexbox */
-            justify-content: space-between; /* Meletakkan username dan skor di ujung-ujung */
-            align-items: center; /* Pusatkan secara vertikal */
-        }
-         #players-list li:last-child {
-             border-bottom: none; /* Hilangkan border pada item terakhir */
-         }
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
 
+        }
+        #players-list li:last-child{
+            border-bottom: none;
+        }
 
         #timer {
             font-size: 1.4em;
@@ -147,7 +147,8 @@
             color: #e74c3c;
             margin-top: 15px;
         }
-          #chat-container {
+
+        #chat-container {
             margin-top: 20px;
             border: 1px solid #ddd;
             padding: 10px;
@@ -167,35 +168,42 @@
             border-radius: 4px;
         }
         #send-message-btn{
-             width: 25%;
+            width: 25%;
         }
 
-        /* Menyembunyikan elemen secara default */
         #lobby, #room, #game-over {
             display: none;
         }
-         /* Tombol Logout */
+
         #logout-btn {
             position: absolute;
             top: 10px;
             right: 10px;
         }
 
+        .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body>
     <div id="app">
         <h1><i class="fas fa-gamepad"></i> Wanzofc Quiz</h1>
-         <button class="button" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <button class="button" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
 
         <!-- Lobby -->
         <div id="lobby">
-           <input type="text" id="username-input" placeholder="Your Name">
+            <input type="text" id="username-input" placeholder="Your Name">
+            <input type="file" id="profile-pic-input" accept="image/*">
             <button class="button" id="create-room-btn"><i class="fas fa-plus-circle"></i> Create Room</button>
             <input type="text" id="room-id-input" placeholder="Room ID">
             <button class="button" id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Join Room</button>
-             <div id="error-message"></div>
-              <!-- Leaderboard -->
+            <div id="error-message"></div>
+            <!-- Leaderboard -->
             <div id="leaderboard">
                 <h3>Leaderboard</h3>
                 <ul id="leaderboard-list"></ul>
@@ -210,13 +218,13 @@
                 <p>Room ID: <span id="room-id-display"></span></p>
                 <p>Players:</p>
                 <ul id="players-list">
-                    <!-- Daftar pemain akan diisi di sini -->
+                    <!-- Daftar pemain -->
                 </ul>
             </div>
             <div id="question-container">
                 <h3 id="question-text"></h3>
                 <div id="answers-container">
-                    <!-- Tombol jawaban akan diisi di sini -->
+                    <!-- Tombol jawaban -->
                 </div>
             </div>
             <div id="chat-container">
@@ -225,30 +233,31 @@
                 <input type="text" id="chat-input" placeholder="Type your message...">
                 <button class="button" id="send-message-btn">Send</button>
             </div>
-             <button class="button" id="restart-btn" ><i class="fas fa-redo-alt"></i> Restart Game</button>
+            <button class="button" id="restart-btn" ><i class="fas fa-redo-alt"></i> Next</button>
             <button class="button" id="leave-room-btn"><i class="fas fa-sign-out-alt"></i> Leave Room</button>
-
         </div>
 
         <!-- Game Over -->
         <div id="game-over">
-              <h2>Game Over!</h2>
+            <h2>Game Over!</h2>
             <p>Scores:</p>
             <ul id="final-scores"></ul>
             <button class="button" id="back-to-lobby-btn"><i class="fas fa-arrow-left"></i> Back to Lobby</button>
         </div>
     </div>
 
+    <!-- Hapus translator.js -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/socket.io/socket.io.js"></script>
-     <script>
+    <script>
         const socket = io();
 
         // --- Elemen DOM ---
         const lobby = document.getElementById('lobby');
         const room = document.getElementById('room');
         const gameOver = document.getElementById('game-over');
-        const usernameInput = document.getElementById('username-input'); // Input username di lobby
+        const usernameInput = document.getElementById('username-input');
+        const profilePicInput = document.getElementById('profile-pic-input');
         const createRoomBtn = document.getElementById('create-room-btn');
         const roomIdInput = document.getElementById('room-id-input');
         const joinRoomBtn = document.getElementById('join-room-btn');
@@ -265,8 +274,6 @@
         const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const leaderboardList = document.getElementById('leaderboard-list');
-
-        // Elemen Chat
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const sendMessageBtn = document.getElementById('send-message-btn');
@@ -274,29 +281,65 @@
         // --- State ---
         let currentRoomId = null;
         let currentUsername = null;
+        let profilePicDataUrl = null;
 
-        // --- Cek Username di Local Storage ---
         const storedUsername = localStorage.getItem('username');
         if (storedUsername) {
             currentUsername = storedUsername;
-            usernameInput.value = currentUsername; // Isi input username
+            usernameInput.value = currentUsername;
             showLobby();
         } else {
-            showLobby(); // Tetap tampilkan lobby, tapi mungkin sembunyikan tombol create/join dulu
+            showLobby();
         }
 
         // --- Event Handlers ---
 
-        // Logout
+        profilePicInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    profilePicDataUrl = e.target.result;
+                    // Optional: Tampilkan preview
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
         logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('username');
             currentUsername = null;
-            socket.disconnect(); // Putuskan koneksi
-            window.location.reload(); // Muat ulang (cara sederhana)
+            socket.disconnect();
+            window.location.reload();
         });
 
-        // Create Room
         createRoomBtn.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            if (!username) {
+                 Swal.fire({
+                    icon: 'warning',
+                    text: 'Please enter a username first.'
+                });
+                return;
+            }
+            currentUsername = username;
+            localStorage.setItem('username', currentUsername);
+
+            const roomName = prompt("Enter room name (optional):");
+            socket.emit('createRoom', currentUsername, roomName, (response) => {
+                if (response.success) {
+                    currentRoomId = response.roomId;
+                    showRoom();
+                    if (profilePicDataUrl) {
+                        sendProfileData();
+                    }
+                } else {
+                     displayError(response.message)
+                }
+            });
+        });
+
+        joinRoomBtn.addEventListener('click', () => {
             const username = usernameInput.value.trim();
              if (!username) {
                 Swal.fire({
@@ -305,97 +348,71 @@
                 });
                 return;
             }
-
             currentUsername = username;
             localStorage.setItem('username', currentUsername);
 
-
-            const roomName = prompt("Enter room name (optional):");
-            socket.emit('createRoom', currentUsername, roomName, (response) => {
-                if (response.success) {
-                    currentRoomId = response.roomId;
-                    showRoom();
-                } else {
-                    displayError(response.message);
-                }
-            });
-        });
-
-        // Join Room
-        joinRoomBtn.addEventListener('click', () => {
-            const username = usernameInput.value.trim();
-            if (!username) {
-                Swal.fire({
-                    icon: 'warning',
-                    text: 'Please enter a username first.'
-                });
-                return;
-            }
-            currentUsername = username;
-            localStorage.setItem('username', currentUsername);
             const roomId = roomIdInput.value.trim().toUpperCase();
             if (roomId) {
                 socket.emit('joinRoom', roomId, currentUsername, (response) => {
                     if (response.success) {
                         currentRoomId = roomId;
                         showRoom();
+                        if (profilePicDataUrl) {
+                            sendProfileData();
+                        }
                     } else {
-                        displayError(response.message);
+                         displayError(response.message)
                     }
                 });
-            } else {
+            }else{
                  Swal.fire({
-                    icon:"warning",
-                    text: "Silahkan masukkan id room"
-                })
-            }
-        });
-
-        // Answer Question
-        answersContainer.addEventListener('click', (event) => {
-            if (event.target.classList.contains('answer-button')) {
-                 const answerIndex = parseInt(event.target.dataset.index);
-                if (answerIndex === undefined) return;
-
-                disableAnswerButtons();
-                socket.emit('answerQuestion', answerIndex, (response) => {
-                  if(response.success){
-                    if(response.correct){
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Correct!',
-                            text: `Your score: ${response.score}`,
-                            timer: 1500,
-                            showConfirmButton: false
-
-                        })
-                    } else {
-                        Swal.fire({
-                            icon:"error",
-                            title: "Incorrect!",
-                            text: `Your score: ${response.score}`,
-                            timer: 1500,
-                            showConfirmButton: false
-                        })
-                    }
-                  } else {
-                     displayError(response.message);
-                  }
+                    icon: 'warning',
+                    text: 'Silahkan masukkan id room.'
                 });
             }
         });
 
-        // Leave Room
+        answersContainer.addEventListener('click', (event) => {
+             if (event.target.classList.contains('answer-button')) {
+                const answerIndex = parseInt(event.target.dataset.index);
+                 if (answerIndex === undefined) return;
+                disableAnswerButtons();
+
+                socket.emit('answerQuestion', answerIndex, (response) => {
+                     if(response.success){
+                        if(response.correct){
+                             Swal.fire({
+                                icon: 'success',
+                                title: 'Correct!',
+                                text: `Your score: ${response.score}`,
+                                 timer: 1500,
+                                 showConfirmButton: false
+                            })
+                        } else {
+                             Swal.fire({
+                                icon: 'error',
+                                title: 'Incorrect!',
+                                text: `Your score: ${response.score}`,
+                                timer: 1500,
+                                showConfirmButton: false
+                            })
+                        }
+                     } else {
+                         displayError(response.message)
+                     }
+                });
+            }
+        });
+
         leaveRoomBtn.addEventListener('click', () => {
             socket.emit('leaveRoom');
             showLobby();
         });
 
-        // Restart Game
         restartBtn.addEventListener('click', () => {
             socket.emit('restartGame');
         });
-        // Kirim Pesan Chat
+
         sendMessageBtn.addEventListener('click', () => {
             const message = chatInput.value;
             if (message.trim()) {
@@ -403,37 +420,41 @@
                 chatInput.value = '';
             }
         });
-         backToLobbyBtn.addEventListener('click', () => {
-                showLobby();
-         });
+
+        backToLobbyBtn.addEventListener('click',() => {
+            showLobby();
+        })
 
         // --- Socket.IO Event Listeners ---
 
-        // Room Info
         socket.on('roomInfo', (data) => {
             roomNameDisplay.textContent = data.roomName;
             roomIdDisplay.textContent = data.roomId;
-            playersList.innerHTML = data.users.map(user => `<li><span>${user.username}</span><span>${user.score}</span></li>`).join('');
+            playersList.innerHTML = data.users.map(user => `
+                <li>
+                    <img src="${user.profilePic || 'default-avatar.png'}" alt="Profile Pic" class="profile-pic">
+                    <span>${user.username}</span>
+                    <span>${user.score}</span>
+                </li>
+            `).join('');
             timerDisplay.textContent = `Time left: ${data.timeLeft}s`;
-             // Tampilkan pertanyaan pertama saat pertama kali join
-            if(data.currentQuestionIndex === 1) {
-                displayQuestion(data.questions ? data.questions[0] : null); //Cek jika questions ada.
-            }
 
+            if (data.currentQuestionIndex === 1) {
+                displayQuestion(data.questions ? data.questions[0] : null);
+            }
         });
 
-        // Next Question
         socket.on('nextQuestion', (question) => {
             displayQuestion(question);
+            speak(question.question); // Text to speach
              Swal.close();
         });
 
-        // Game Over
         socket.on('gameOver', (scores) => {
-             const myScore = scores.find(user => user.username === currentUsername);
+            const myScore = scores.find(user => user.username === currentUsername);
             const highestScore = Math.max(...scores.map(user => user.score));
 
-            if(myScore && myScore.score === highestScore){
+             if(myScore && myScore.score === highestScore){
 
                 Swal.fire({
                     icon: 'success',
@@ -451,41 +472,54 @@
             showGameOver();
         });
 
-        // Game Restarted
         socket.on('gameRestarted', (question) => {
             showRoom();
             displayQuestion(question);
-            Swal.close();
-        });
-         // Leaderboard Update
-        socket.on('leaderboardUpdate', (leaderboard) => {
-            leaderboardList.innerHTML = leaderboard.map(user => `<li>${user.username}: ${user.score}</li>`).join('');
+             Swal.close();
         });
 
-        // Chat Message
+        socket.on('leaderboardUpdate', (leaderboard) => {
+            leaderboardList.innerHTML = leaderboard.map(user => `
+                <li>
+                    <img src="${user.profilePic || 'default-avatar.png'}" alt="Profile Pic" class="profile-pic">
+                    <span>${user.username}</span>
+                    <span>${user.score}</span>
+                </li>
+            `).join('');
+        });
+
         socket.on('chatMessage', (data) => {
-            const messageElement = document.createElement('div');
+             const messageElement = document.createElement('div');
             messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message} <small>(${data.timestamp.toLocaleString()})</small>`;
             chatMessages.appendChild(messageElement);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
 
-        // Error
+        socket.on('profileUpdated', (data) => {
+            // Update gambar profil pemain secara dinamis
+            const playerListItem = playersList.querySelector(`li:has(span:first-child:contains(${users[data.userId].username}))`);
+            if (playerListItem) {
+                const img = playerListItem.querySelector('img');
+                img.src = data.profilePic;
+            }
+        });
+
         socket.on('error', (message) => {
-           displayError(message)
+            displayError(message)
         });
 
         // --- Functions ---
+
         function showLobby() {
-            lobby.style.display = 'block';
+             lobby.style.display = 'block';
             room.style.display = 'none';
             gameOver.style.display = 'none';
             currentRoomId = null;
-             clearQuestion();
+            clearQuestion();
         }
 
         function showRoom() {
-            lobby.style.display = 'none';
+             lobby.style.display = 'none';
             room.style.display = 'block';
             gameOver.style.display = 'none';
         }
@@ -494,25 +528,25 @@
             lobby.style.display = 'none';
             room.style.display = 'none';
             gameOver.style.display = 'block';
-              clearQuestion();
+            clearQuestion();
         }
 
         function displayQuestion(question) {
             if (!question) return;
 
-            questionText.textContent = question.question;
+            questionText.innerHTML = question.question; // Gunakan innerHTML
             answersContainer.innerHTML = question.answers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
             enableAnswerButtons();
-             speak(question.question); // Text-to-speech
+            // speak(question.question); // Pindahkan ke nextQuestion
         }
 
-        function clearQuestion(){
-             questionText.textContent = "";
-             answersContainer.innerHTML = "";
+        function clearQuestion() {
+            questionText.textContent = "";
+            answersContainer.innerHTML = "";
         }
 
         function disableAnswerButtons() {
-            document.querySelectorAll('.answer-button').forEach(button => {
+             document.querySelectorAll('.answer-button').forEach(button => {
                 button.disabled = true;
             });
         }
@@ -522,25 +556,24 @@
                 button.disabled = false;
             });
         }
+
         function displayError(message){
             Swal.fire({
-                icon:"error",
-                title: "Oops..",
+                icon: 'error',
+                title: 'Oops...',
                 text: message
             })
         }
 
-        // Text-to-Speech
         function speak(text) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'id-ID'; // Set ke bahasa Indonesia
+                utterance.lang = 'id-ID';
 
-                //Coba dapatkan suara perempuan (jika ada)
                 const voices = window.speechSynthesis.getVoices();
                 const femaleVoice = voices.find(voice => voice.lang === 'id-ID' && voice.name.toLowerCase().includes('female'));
-                if(femaleVoice){
-                     utterance.voice = femaleVoice;
+                if (femaleVoice) {
+                    utterance.voice = femaleVoice;
                 }
 
                 window.speechSynthesis.speak(utterance);
@@ -548,6 +581,11 @@
                 console.warn('Text-to-speech not supported.');
             }
         }
+
+        function sendProfileData() {
+            socket.emit('updateProfile', {profilePic: profilePicDataUrl});
+        }
+
     </script>
 </body>
 </html>
