@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wanzofc Quiz</title>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- SweetAlert2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11">
     <style>
-        body {
+       body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
@@ -141,10 +143,12 @@
         }
 
         #timer {
-            font-size: 1.4em;
+            /* font-size: 1.4em;
             font-weight: bold;
             margin-bottom: 15px;
-            color: #e74c3c;
+            color: #e74c3c; */
+            /* Hapus styling lama timer */
+             display: none; /* Sembunyikan timer angka */
         }
 
         #error-message {
@@ -236,6 +240,25 @@
              border-radius: 8px;
         }
 
+         /* Progress Bar */
+        #progress-bar-container {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            overflow: hidden; /* Penting untuk border-radius pada progress bar */
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 20px;
+            background-color: #2e86de;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            transition: width 0.5s ease; /* Animasi transisi lebar */
+        }
+
 
     </style>
 </head>
@@ -270,7 +293,10 @@
         <!-- Room -->
         <div id="room">
             <h2 id="room-name"></h2>
-            <div id="timer"></div>
+             <div id="timer"></div>  <!-- angka waktu akan disembunyikan -->
+            <div id="progress-bar-container">
+                <div id="progress-bar"></div>
+            </div>
             <div id="room-info">
                 <p>Room ID: <span id="room-id-display"></span></p>
                 <p>Players:</p>
@@ -337,6 +363,7 @@
         const chatMessages = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const sendMessageBtn = document.getElementById('send-message-btn');
+        const progressBar = document.getElementById('progress-bar'); // Progress bar
 
         // --- State ---
         let currentRoomId = null;
@@ -379,6 +406,8 @@
 
                     // Ganti placeholder dengan gambar profil
                     profilePicLabel.innerHTML = `<img src="${profilePicDataUrl}" alt="Profile Pic" class="profile-pic">`;
+                      // Update foto profil di mana pun ditampilkan (lobby)
+                     updateProfilePreview();
                 };
                 reader.readAsDataURL(file);
             }
@@ -505,7 +534,7 @@
         })
 
         // --- Socket.IO Event Listeners ---
-
+          // Modifikasi roomInfo
         socket.on('roomInfo', (data) => {
             roomNameDisplay.textContent = data.roomName;
             roomIdDisplay.textContent = data.roomId;
@@ -516,17 +545,32 @@
                     <span>${user.score}</span>
                 </li>
             `).join('');
-            timerDisplay.textContent = `Time left: ${data.timeLeft}s`;
 
-            if (data.currentQuestionIndex === 1) {
-                displayQuestion(data.questions ? data.questions[0] : null);
+            // Update progress bar
+            if (data.timeLeft !== undefined) {
+                const percentage = (data.timeLeft / 30) * 100; // Hitung persentase
+                progressBar.style.width = `${percentage}%`;
+                progressBar.textContent = data.timeLeft > 0 ? `${Math.round(percentage)}%` : ''; // Tampilkan persentase (bulatkan)
             }
+
+
+             if (data.currentQuestionIndex === 1) {
+                // Gunakan setTimeout untuk menunda eksekusi displayQuestion
+                setTimeout(() => {
+                    displayQuestion(data.questions ? data.questions[0] : null);
+                }, 500); // Tunda 0.5 detik, sesuaikan
+
+            }
+
         });
 
         // Modifikasi nextQuestion
         socket.on('nextQuestion', (question) => {
             hasAnswered = false; // Reset flag
-            displayQuestion(question);
+             // Gunakan setTimeout untuk menunda eksekusi displayQuestion
+            setTimeout(() => {
+                displayQuestion(question);
+            }, 500); // Tunda 0.5 detik, sesuaikan
             Swal.close();
         });
 
@@ -555,7 +599,10 @@
         socket.on('gameRestarted', (question) => {
             showRoom();
              hasAnswered = false;
-            displayQuestion(question);
+            //  displayQuestion(question);
+             setTimeout(() => {
+                displayQuestion(question);
+            }, 500);
              Swal.close();
         });
 
@@ -578,6 +625,11 @@
 
         socket.on('profileUpdated', (data) => {
             // Update gambar profil pemain secara dinamis
+            if (users[data.userId] && users[data.userId].username === currentUsername) {
+                profilePicDataUrl = data.profilePic; // Update data URL lokal
+                updateProfilePreview(); // Update preview di lobby
+            }
+            // Update di daftar pemain, JIKA ADA
             const playerListItem = playersList.querySelector(`li:has(span:first-child:contains(${users[data.userId].username}))`);
             if (playerListItem) {
                 const img = playerListItem.querySelector('img');
@@ -597,6 +649,7 @@
             gameOver.style.display = 'none';
             currentRoomId = null;
             clearQuestion();
+             updateProfilePreview(); // Update preview saat kembali ke lobby
         }
 
         function showRoom() {
@@ -691,6 +744,14 @@
 
         function sendProfileData() {
             socket.emit('updateProfile', {profilePic: profilePicDataUrl});
+        }
+         // Fungsi untuk update preview foto profil di lobby
+        function updateProfilePreview() {
+            if (profilePicDataUrl) {
+                profilePicLabel.innerHTML = `<img src="${profilePicDataUrl}" alt="Profile Pic" class="profile-pic">`;
+                profilePicPreview.src = profilePicDataUrl;
+                profilePicPreview.style.display = 'block';
+            }
         }
 
     </script>
