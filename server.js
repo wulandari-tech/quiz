@@ -1,67 +1,180 @@
+// --- IMPORTS ---
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const fetch = require('node-fetch');
-const fs = require('fs');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const bodyParser = require('body-parser');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 
+// --- INITIALIZATION ---
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "https://styles-production.up.railway.app", // GANTI SEBELUM DEPLOY!
-        methods: ["GET", "POST"]
+const io = socketIo(server);
+const PORT = process.env.PORT || 3001;
+
+// --- DATABASE CONNECTION ---
+// Ganti dengan string koneksi MongoDB Anda. Sebaiknya gunakan variabel lingkungan.
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/wanzofc-quiz';
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('MongoDB connected successfully.'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+// --- MONGOOSE SCHEMAS ---
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true, trim: true },
+    password: { type: String, required: true },
+    totalScore: { type: Number, default: 0 },
+    gamesPlayed: { type: Number, default: 0 },
+    profilePic: { type: String, default: 'default-avatar.png' }
+});
+const User = mongoose.model('User', userSchema);
+
+// --- MIDDLEWARE SETUP ---
+app.use(bodyParser.urlencoded({ extended: true }));
+// Menyajikan file statis (HTML, CSS, JS) dari direktori root.
+// Ini memungkinkan /login.html, /register.html, dll. untuk diakses.
+app.use(express.static(__dirname));
+
+const sessionMiddleware = session({
+    secret: 'a-secret-key-for-wanzofc-quiz-super-long-and-random', // Ganti dengan string acak yang panjang untuk produksi
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: MONGO_URI }),
+    cookie: { maxAge: 1000 * 60 * 60 * 24 } // Sesi 1 hari
+});
+app.use(sessionMiddleware);
+io.use((socket, next) => {
+    sessionMiddleware(socket.request, {}, next);
+});
+
+// --- AUTHENTICATION MIDDLEWARE ---
+const isAuthenticated = (req, res, next) => {
+    if (req.session.userId) {
+        next();
+    } else {
+        res.redirect('/login.html');
+    }
+};
+
+// --- HTTP ROUTES ---
+app.get('/', (req, res) => {
+    if (req.session.userId) {
+        res.redirect('/game'); // Jika sudah login, langsung ke game
+    } else {
+        res.sendFile(__dirname + '/landing.html'); // Jika tidak, ke halaman landing
     }
 });
 
-const PORT = process.env.PORT || 3001;
-const USERS_FILE = 'users.json';
-const ROOMS_FILE = 'rooms.json';
-
-function loadData(filename) {
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).send('Username and password are required. <a href="/register.html">Try again</a>');
+    }
     try {
-        if (fs.existsSync(filename)) {
-            return JSON.parse(fs.readFileSync(filename, 'utf8'));
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(400).send('User already exists. <a href="/register.html">Try again</a>');
         }
-        fs.writeFileSync(filename, '{}', 'utf8');
-        return {};
-    } catch (err) {
-        console.error(`Error loading ${filename}:`, err);
-        return {};
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ username, password: hashedPassword });
+        await newUser.save();
+        res.redirect('/login.html');
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).send('Server error. <a href="/register.html">Try again</a>');
     }
-}
+});
 
-function saveData(filename, data) {
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
     try {
-        fs.writeFileSync(filename, JSON.stringify(data, null, 2), 'utf8');
-    } catch (err) {
-        console.error(`Error saving ${filename}:`, err);
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(400).send('Invalid credentials. <a href="/login.html">Try again</a>');
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).send('Invalid credentials. <a href="/login.html">Try again</a>');
+        }
+        req.session.userId = user._id;
+        req.session.username = user.username;
+        res.redirect('/game');
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).send('Server error. <a href="/login.html">Try again</a>');
     }
-}
+});
 
-let users = loadData(USERS_FILE);
-let rooms = loadData(ROOMS_FILE);
+app.get('/game', isAuthenticated, (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            return res.redirect('/game');
+        }
+        res.clearCookie('connect.sid');
+        res.redirect('/');
+    });
+});
+
+app.get('/profile', isAuthenticated, (req, res) => {
+    res.sendFile(__dirname + '/profile.html');
+});
+
+app.get('/api/profile', isAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findById(req.session.userId).select('-password'); // Exclude password
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error('API profile error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+// --- GAME LOGIC & STATE ---
+let rooms = {}; // Ruangan disimpan di memori, karena bersifat sementara
 
 function generateRoomId() {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
 }
 
-async function fetchQuestions(amount = 10, category = null, difficulty = null, type = null) {
-    let url = `https://opentdb.com/api.php?amount=${amount}`;
-    if (category) url += `&category=${category}`;
-    if (difficulty) url += `&difficulty=${difficulty}`;
-    if (type) url += `&type=${type}`;
+async function fetchQuestions(options = {}) {
+    const { amount = 10, category = '', difficulty = '' } = options;
+    let url = `https://opentdb.com/api.php?amount=${amount}&type=multiple`;
+    if (category) {
+        url += `&category=${category}`;
+    }
+    if (difficulty) {
+        url += `&difficulty=${difficulty}`;
+    }
 
     try {
         const response = await fetch(url);
         const data = await response.json();
         if (data.response_code === 0) {
-            return data.results.map(item => ({
-                question: item.question,
-                answers: [...item.incorrect_answers, item.correct_answer].sort(() => Math.random() - 0.5),
-                correct: [...item.incorrect_answers, item.correct_answer].sort(() => Math.random() - 0.5).indexOf(item.correct_answer)
-            }));
+            return data.results.map(item => {
+                const answers = [...item.incorrect_answers, item.correct_answer];
+                // Acak jawaban
+                for (let i = answers.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [answers[i], answers[j]] = [answers[j], answers[i]];
+                }
+                return {
+                    question: item.question,
+                    answers: answers,
+                    correct: answers.indexOf(item.correct_answer)
+                };
+            });
         }
-        console.error("Error fetching questions:", data.response_code);
         return [];
     } catch (error) {
         console.error("Error fetching questions:", error);
@@ -69,219 +182,155 @@ async function fetchQuestions(amount = 10, category = null, difficulty = null, t
     }
 }
 
-app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
-
-function getLeaderboard() {
-    return Object.values(users)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10)
-        .map(user => ({ username: user.username, score: user.score, profilePic: user.profilePic || 'default-avatar.png' }));
+async function getLeaderboard() {
+    try {
+        return await User.find({}, 'username totalScore profilePic')
+            .sort({ totalScore: -1 })
+            .limit(10)
+            .lean();
+    } catch (error) {
+        console.error("Leaderboard error:", error);
+        return [];
+    }
 }
-function sendLeaderboard() { io.emit('leaderboardUpdate', getLeaderboard()); }
 
 function updateRoomInfo(roomId) {
     if (!rooms[roomId]) return;
-    const userList = Object.values(rooms[roomId].users).map(user => ({
-        username: user.username, score: user.score, profilePic: user.profilePic || 'default-avatar.png'
+    const room = rooms[roomId];
+    const userList = Object.values(room.users).map(u => ({
+        username: u.username,
+        score: u.score,
+        profilePic: u.profilePic
     }));
     io.to(roomId).emit('roomInfo', {
         roomId,
-        roomName: rooms[roomId].roomName,
+        roomName: room.roomName,
         users: userList,
-        totalUsers: userList.length,
-        currentQuestionIndex: rooms[roomId].questionIndex + 1,
-        totalQuestions: rooms[roomId].questions.length,
-        timeLeft: rooms[roomId].timeLeft,  //timeLeft tetap dikirim
-        questions: rooms[roomId].questions
+        // info lain seperti questionIndex dapat ditambahkan jika diperlukan
     });
 }
 
-//Modifikasi startTimer
-function startTimer(roomId) {
-    if (!rooms[roomId]) return;
+const MAX_PLAYERS_PER_ROOM = 10;
 
-    rooms[roomId].timeLeft = 30; // Waktu awal
-    updateRoomInfo(roomId);
-
-    if (rooms[roomId].timer) {
-        clearInterval(rooms[roomId].timer);
-    }
-
-    rooms[roomId].timer = setInterval(() => {
-        if (!rooms[roomId]) {
-            clearInterval(rooms[roomId].timer);
-            return;
-        }
-        rooms[roomId].timeLeft--; // Kurangi waktu
-        updateRoomInfo(roomId); // Kirim timeLeft yang diperbarui
-
-        if (rooms[roomId].timeLeft <= 0) {
-            clearInterval(rooms[roomId].timer);
-            moveToNextQuestion(roomId);
-        }
-    }, 1000);
+function broadcastPublicRooms() {
+    const publicRooms = Object.entries(rooms).map(([id, room]) => ({
+        id,
+        name: room.roomName,
+        playerCount: Object.keys(room.users).length,
+        maxPlayers: MAX_PLAYERS_PER_ROOM
+    }));
+    io.emit('publicRoomsUpdate', publicRooms);
 }
 
-
-function moveToNextQuestion(roomId) {
-    if (!rooms[roomId]) return;
-    const room = rooms[roomId];
-    if (room.questionIndex < room.questions.length - 1) {
-        room.questionIndex++;
-        io.to(roomId).emit('nextQuestion', room.questions[room.questionIndex]);
-        startTimer(roomId);
-    } else {
-        io.to(roomId).emit('gameOver', Object.values(room.users).map(u => ({ username: u.username, score: u.score })));
+// --- SOCKET.IO LOGIC ---
+io.on('connection', async (socket) => {
+    const session = socket.request.session;
+    if (!session || !session.userId) {
+        console.log('Unauthenticated socket connection attempt, disconnecting.');
+        return socket.disconnect();
     }
-}
 
-io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-    sendLeaderboard();
+    try {
+        const user = await User.findById(session.userId).lean();
+        if (!user) {
+            console.log(`User with ID ${session.userId} not found, disconnecting.`);
+            return socket.disconnect();
+        }
 
-    socket.on('createRoom', async (username, roomName, callback) => {
-        username = username.trim();
-        if (!username) return callback({ success: false, message: 'Invalid username.' });
+        socket.data.userId = user._id.toString();
+        socket.data.username = user.username;
+        socket.data.profilePic = user.profilePic;
+        socket.data.currentRoomId = null;
 
-        const roomId = generateRoomId();
-        const questions = await fetchQuestions(10, 9, "easy");
+        console.log(`User '${user.username}' connected.`);
+        socket.emit('connectionSuccess', { username: user.username, profilePic: user.profilePic });
 
-        if (questions.length > 0) {
-            rooms[roomId] = {
-                users: { [socket.id]: { username, score: 0, profilePic: null } },
-                questionIndex: 0,
-                questions,
-                roomName: roomName || `Room ${roomId}`,
-                timer: null,
-                timeLeft: 30, // Waktu awal
-            };
-            if (!users[socket.id]) {
-                users[socket.id] = { username, score: 0, profilePic: null, roomId };
-            } else {
-                users[socket.id].roomId = roomId;
+        socket.on('getPublicRooms', () => {
+            const publicRooms = Object.entries(rooms).map(([id, room]) => ({
+                id,
+                name: room.roomName,
+                playerCount: Object.keys(room.users).length,
+                maxPlayers: MAX_PLAYERS_PER_ROOM
+            }));
+            socket.emit('publicRoomsUpdate', publicRooms);
+        });
+
+        socket.on('getLeaderboard', async () => {
+            socket.emit('leaderboardUpdate', await getLeaderboard());
+        });
+
+        socket.on('createRoom', async (options, callback) => {
+            const { roomName, category, difficulty } = options;
+            const roomId = generateRoomId();
+            const questions = await fetchQuestions({ category, difficulty });
+
+            if (questions.length === 0) {
+                return callback({ success: false, message: 'Failed to fetch questions for the selected criteria.' });
             }
-            saveData(USERS_FILE, users);
-            saveData(ROOMS_FILE, rooms);
+
+            rooms[roomId] = {
+                users: {},
+                questionIndex: -1,
+                questions: questions,
+                roomName: roomName || `Room ${roomId}`,
+                timer: null
+            };
+
             socket.join(roomId);
+            rooms[roomId].users[socket.id] = { username: socket.data.username, score: 0, profilePic: socket.data.profilePic };
+            socket.data.currentRoomId = roomId;
+
             callback({ success: true, roomId });
             updateRoomInfo(roomId);
-            startTimer(roomId); // Mulai timer
-        } else {
-            callback({ success: false, message: 'Failed to fetch questions' });
-        }
-    });
+            broadcastPublicRooms();
+        });
 
-    socket.on('joinRoom', (roomId, username, callback) => {
-        username = username.trim();
-        if (!username) return callback({ success: false, message: 'Invalid username.' });
-
-        roomId = roomId.toUpperCase();
-        if (rooms[roomId]) {
-            if (Object.keys(rooms[roomId].users).length >= 4)
+        socket.on('joinRoom', (roomId, callback) => {
+            roomId = roomId.toUpperCase();
+            const room = rooms[roomId];
+            if (!room) {
+                return callback({ success: false, message: 'Room not found.' });
+            }
+            if (Object.keys(room.users).length >= MAX_PLAYERS_PER_ROOM) {
                 return callback({ success: false, message: 'Room is full.' });
-            if (Object.values(rooms[roomId].users).some(u => u.username === username))
-                return callback({ success: false, message: 'Username taken in this room.' });
-
-            rooms[roomId].users[socket.id] = { username, score: 0, profilePic: null };
-            if (!users[socket.id]) {
-                users[socket.id] = { username, score: 0, profilePic: null, roomId };
-            } else {
-                users[socket.id].roomId = roomId;
             }
-            saveData(USERS_FILE, users);
-            saveData(ROOMS_FILE, rooms);
+
             socket.join(roomId);
-            callback({ success: true, questions: rooms[roomId].questions });
+            room.users[socket.id] = { username: socket.data.username, score: 0, profilePic: socket.data.profilePic };
+            socket.data.currentRoomId = roomId;
+
+            callback({ success: true });
             updateRoomInfo(roomId);
-        } else {
-            callback({ success: false, message: 'Room not found.' });
-        }
-    });
+            broadcastPublicRooms();
+        });
 
-    socket.on('answerQuestion', (answerIndex, callback) => {
-        const user = users[socket.id];
-        if (!user || !rooms[user.roomId]) return;
-        const room = rooms[user.roomId];
-        const currentQuestion = room.questions[room.questionIndex];
+        const handleLeaveRoom = () => {
+            const roomId = socket.data.currentRoomId;
+            if (!roomId || !rooms[roomId]) return;
 
-        if (answerIndex === currentQuestion.correct) {
-            rooms[user.roomId].users[socket.id].score += 10;
-            users[socket.id].score += 10;
-            callback({ success: true, correct: true, score: users[socket.id].score });
-        } else {
-            callback({ success: true, correct: false, score: users[socket.id].score });
-        }
-        saveData(USERS_FILE, users); saveData(ROOMS_FILE, rooms);
-        sendLeaderboard();
-    });
+            delete rooms[roomId].users[socket.id];
+            socket.leave(roomId);
+            socket.data.currentRoomId = null;
 
-    socket.on('restartGame', async () => {
-        const user = users[socket.id];
-        if (!user || !rooms[user.roomId]) return;
-        const room = rooms[user.roomId];
-
-        const newQuestions = await fetchQuestions(10, 9, "easy");
-        if (newQuestions.length === 0) {
-            return io.to(user.roomId).emit('error', 'Failed to fetch questions.');
-        }
-
-        room.questionIndex = 0;
-        room.questions = newQuestions;
-        room.timeLeft = 30;     // Reset waktu
-
-        for (let userId in room.users) room.users[userId].score = 0;
-        saveData(ROOMS_FILE, rooms);
-
-        clearTimeout(room.timer); //Hentikan Timer
-        startTimer(user.roomId); // Mulai timer baru
-        updateRoomInfo(user.roomId);
-        io.to(user.roomId).emit('gameRestarted', room.questions[0]);
-    });
-
-    socket.on('updateProfile', (data) => {
-        const user = users[socket.id];
-        if (user) {
-            user.profilePic = data.profilePic;
-            saveData(USERS_FILE, users);
-            if (user.roomId) {
-                io.to(user.roomId).emit('profileUpdated', { userId: socket.id, profilePic: data.profilePic });
+            if (Object.keys(rooms[roomId].users).length === 0) {
+                delete rooms[roomId];
+            } else {
+                updateRoomInfo(roomId);
             }
-            sendLeaderboard();
-        }
-    });
+            broadcastPublicRooms();
+        };
 
-    socket.on('leaveRoom', () => { handleLeaveRoom(socket); });
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-        handleLeaveRoom(socket);
-    });
+        socket.on('leaveRoom', handleLeaveRoom);
+        socket.on('disconnect', () => {
+            handleLeaveRoom();
+            console.log(`User '${socket.data.username}' disconnected.`);
+        });
 
-    function handleLeaveRoom(socket) {
-        const user = users[socket.id];
-        if (!user) return;
-
-        const roomId = user.roomId;
-        if (!rooms[roomId]) return;
-
-        delete rooms[roomId].users[socket.id];
-        if (Object.keys(rooms[roomId].users).length === 0) {
-            delete rooms[roomId];
-        } else {
-            updateRoomInfo(roomId);
-        }
-        saveData(ROOMS_FILE, rooms);
-        socket.leave(roomId);
+    } catch (error) {
+        console.error("Error during socket connection setup:", error);
+        socket.disconnect();
     }
-
-    socket.on('chatMessage', (message) => {
-        const user = users[socket.id];
-        if (user && rooms[user.roomId]) {
-            message = message.trim();
-            if (message.length > 0 && message.length <= 200) {
-                io.to(user.roomId).emit('chatMessage', { username: user.username, message, timestamp: new Date() });
-            }
-        }
-    });
 });
 
+// --- SERVER START ---
 server.listen(PORT, () => console.log(`Server listening on port ${PORT}`));

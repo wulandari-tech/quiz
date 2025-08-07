@@ -4,259 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wanzofc Quiz</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11">
     <style>
-       body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f0f2f5;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #app {
-            background-color: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 650px;
-            text-align: center;
-            margin: 20px auto;
-        }
-
-        #leaderboard {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        #leaderboard h3 {
-            margin-bottom: 10px;
-        }
-
-        #leaderboard-list {
-            list-style: none;
-            padding: 0;
-        }
-         #leaderboard-list li {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            align-items: center;
-        }
-
-        h1 {
-            color: #2e86de;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-        }
-
-        h2 {
-            margin-bottom: 15px;
-        }
-
-        .button {
-            background-color: #2e86de;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            margin: 8px;
-            display: inline-block;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
-        }
-
-        .button:hover {
-            background-color: #1b4f72;
-        }
-
-        .button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-
-        #room-info {
-            margin-bottom: 25px;
-        }
-
-        #question-container {
-            margin-bottom: 25px;
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        #question-text {
-            margin-bottom: 20px;
-        }
-
-        .answer-button {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            margin: 6px 0;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            cursor: pointer;
-            background-color: white;
-            font-size: 1em;
-            transition: background-color 0.3s ease;
-        }
-
-        .answer-button:hover {
-            background-color: #f0f0f0;
-        }
-         .answer-button:disabled {
-             background-color: #eee;
-            border-color: #ddd;
-            color: #999;
-            cursor: not-allowed;
-        }
-
-        #players-list {
-            list-style: none;
-            padding: 0;
-            margin-top: 10px;
-
-        }
-
-        #players-list li {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-
-        }
-        #players-list li:last-child{
-            border-bottom: none;
-        }
-
-        #timer {
-             display: none;
-        }
-
-        #error-message {
-            color: #e74c3c;
-            margin-top: 15px;
-        }
-
-        #chat-container {
-            margin-top: 20px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 8px;
-        }
-
-        #chat-messages {
-            max-height: 150px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-        }
-
-        #chat-input {
-            width: 70%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        #send-message-btn{
-            width: 25%;
-        }
-
-        #lobby, #room, #game-over {
-            display: none;
-        }
-
-        #logout-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-        }
-        /* Styling Foto Profil */
-        .profile-pic-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .profile-pic {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #2e86de;
-            margin-right: 10px;
-        }
-
-        .profile-pic-placeholder {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #ddd;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-right: 10px;
-            color: #777;
-        }
-
-        #profile-pic-input {
-            display: none;
-        }
-         #profile-pic-label {
-            background-color: #2e86de;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: inline-block;
-        }
-        #profile-pic-label:hover{
-            background-color: #1b4f72;
-        }
-        #profile-pic-preview {
-            max-width: 200px;
-            max-height: 200px;
-            margin-top: 10px;
-            display: none;
-            border: 2px solid #ddd;
-             border-radius: 8px;
-        }
-
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; display: flex; flex-direction: column; }
+        #app { background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 90%; max-width: 650px; text-align: center; margin: 20px auto; position: relative; }
+        h1, h2 { color: #2e86de; }
+        .button { background-color: #2e86de; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; margin: 8px; font-size: 1em; transition: background-color 0.3s ease; }
+        .button:hover { background-color: #1b4f72; }
+        #user-info { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 10px; border: 2px solid #2e86de; }
+        #logout-btn { position: absolute; top: 15px; right: 15px; background-color: #dc3545; }
+        #logout-btn:hover { background-color: #c82333; }
+        #lobby, #room { display: none; }
+        #leaderboard, #public-rooms { margin-top: 20px; }
+        #leaderboard-list, #players-list, #public-rooms-list { list-style: none; padding: 0; }
+        #leaderboard-list li, #players-list li, #public-rooms-list li { padding: 8px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
+        #public-rooms-list li { background-color: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px; }
+        #players-list img { width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; }
+        .join-btn-small { padding: 5px 10px; font-size: 0.9em; }
+        .swal2-select { display: block !important; width: 80% !important; margin: 10px auto !important; padding: 0.75em !important; border-radius: 6px; border: 1px solid #ddd; }
+        .profile-btn { padding: 8px 12px; font-size: 0.9em; margin-left: 15px; background-color: #17a2b8; border-radius: 50px; }
+        .profile-btn:hover { background-color: #138496; }
     </style>
 </head>
 <body>
     <div id="app">
         <h1><i class="fas fa-gamepad"></i> Wanzofc Quiz</h1>
-        <button class="button" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <button class="button" id="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
 
         <!-- Lobby -->
         <div id="lobby">
-           <div class="profile-pic-container">
-                <label for="profile-pic-input" id="profile-pic-label">
-                    <div class="profile-pic-placeholder"><i class="fas fa-user"></i></div>
-                </label>
-                 <input type="text" id="username-input" placeholder="Your Name">
-                <input type="file" id="profile-pic-input" accept="image/*">
+            <div id="user-info">
+                <img id="user-profile-pic" src="default-avatar.png" alt="Profile Pic" class="profile-pic">
+                <span id="username-display"></span>
+                <a href="/profile.html" class="button profile-btn"><i class="fas fa-user"></i></a>
             </div>
-
-            <img id="profile-pic-preview" src="#" alt="Profile Picture Preview">
-
+            <h2>Lobby</h2>
             <button class="button" id="create-room-btn"><i class="fas fa-plus-circle"></i> Create Room</button>
             <input type="text" id="room-id-input" placeholder="Room ID">
             <button class="button" id="join-room-btn"><i class="fas fa-sign-in-alt"></i> Join Room</button>
-            <div id="error-message"></div>
-            <!-- Leaderboard -->
+
+            <div id="public-rooms">
+                <h3>Public Rooms</h3>
+                <ul id="public-rooms-list"></ul>
+            </div>
+
             <div id="leaderboard">
                 <h3>Leaderboard</h3>
                 <ul id="leaderboard-list"></ul>
@@ -266,175 +59,160 @@
         <!-- Room -->
         <div id="room">
             <h2 id="room-name"></h2>
-            <div id="room-info">
-                <p>Room ID: <span id="room-id-display"></span></p>
-                <p>Players:</p>
-                <ul id="players-list">
-                    <!-- Daftar pemain -->
-                </ul>
-            </div>
-            <div id="question-container">
-                <h3 id="question-text"></h3>
-                <div id="answers-container">
-                    <!-- Tombol jawaban -->
-                </div>
-            </div>
-            <div id="chat-container">
-                <h3>Chat</h3>
-                <div id="chat-messages"></div>
-                <input type="text" id="chat-input" placeholder="Type your message...">
-                <button class="button" id="send-message-btn">Send</button>
-            </div>
-            <button class="button" id="restart-btn" ><i class="fas fa-redo-alt"></i> Next</button>
+            <p>Room ID: <span id="room-id-display"></span></p>
+            <p>Players:</p>
+            <ul id="players-list"></ul>
             <button class="button" id="leave-room-btn"><i class="fas fa-sign-out-alt"></i> Leave Room</button>
-        </div>
-
-        <!-- Game Over -->
-        <div id="game-over">
-            <h2>Game Over!</h2>
-            <p>Scores:</p>
-            <ul id="final-scores"></ul>
-            <button class="button" id="back-to-lobby-btn"><i class="fas fa-arrow-left"></i> Back to Lobby</button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/gh/vitalets/google-translate-api-browser/dist/google-translate-api-browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        const socket = io({ autoConnect: false });
 
-        // --- Elemen DOM ---
+        // DOM Elements
         const lobby = document.getElementById('lobby');
         const room = document.getElementById('room');
-        const gameOver = document.getElementById('game-over');
-        const usernameInput = document.getElementById('username-input');
-        const profilePicInput = document.getElementById('profile-pic-input');
-        const profilePicLabel = document.getElementById('profile-pic-label');
-        const profilePicPreview = document.getElementById('profile-pic-preview');
+        const logoutBtn = document.getElementById('logout-btn');
         const createRoomBtn = document.getElementById('create-room-btn');
         const roomIdInput = document.getElementById('room-id-input');
         const joinRoomBtn = document.getElementById('join-room-btn');
+        const leaveRoomBtn = document.getElementById('leave-room-btn');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const playersList = document.getElementById('players-list');
+        const publicRoomsList = document.getElementById('public-rooms-list');
         const roomNameDisplay = document.getElementById('room-name');
         const roomIdDisplay = document.getElementById('room-id-display');
-        const playersList = document.getElementById('players-list');
-        const questionText = document.getElementById('question-text');
-        const answersContainer = document.getElementById('answers-container');
-        const leaveRoomBtn = document.getElementById('leave-room-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const errorMessage = document.getElementById('error-message');
-        const finalScoresDisplay = document.getElementById('final-scores');
-        const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const leaderboardList = document.getElementById('leaderboard-list');
-        const chatMessages = document.getElementById('chat-messages');
-        const chatInput = document.getElementById('chat-input');
-        const sendMessageBtn = document.getElementById('send-message-btn');
+        const usernameDisplay = document.getElementById('username-display');
+        const userProfilePic = document.getElementById('user-profile-pic');
 
-        // --- State ---
         let currentRoomId = null;
-        let currentUsername = null;
-        let profilePicDataUrl = null;
-        let hasAnswered = false;
-        let questionStartTime = null; // Tetap ada, tapi untuk speech, bukan animasi
 
-
-        const storedUsername = localStorage.getItem('username');
-        if (storedUsername) {
-            currentUsername = storedUsername;
-            usernameInput.value = currentUsername;
-            showLobby();
-        } else {
-            showLobby();
+        function showLobby() {
+            lobby.style.display = 'block';
+            room.style.display = 'none';
+            currentRoomId = null;
+            socket.emit('getLeaderboard');
+            socket.emit('getPublicRooms');
         }
 
-        // --- Event Handlers ---
-        profilePicInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const maxSize = 2 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    Swal.fire({ icon: 'error', title: 'File too large!', text: 'Please choose an image smaller than 2MB.' });
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    profilePicDataUrl = e.target.result;
-                    profilePicPreview.src = profilePicDataUrl;
-                    profilePicPreview.style.display = 'block';
-                    profilePicLabel.innerHTML = `<img src="${profilePicDataUrl}" alt="Profile Pic" class="profile-pic">`;
-                    updateProfilePreview();
-                };
-                reader.readAsDataURL(file);
-            }
+        function showRoom(roomId) {
+            lobby.style.display = 'none';
+            room.style.display = 'block';
+            currentRoomId = roomId;
+        }
+
+        function displayError(message) {
+            Swal.fire({ icon: 'error', title: 'Oops...', text: message });
+        }
+
+        socket.on('connect', () => console.log('Socket connected:', socket.id));
+
+        socket.on('connectionSuccess', (data) => {
+            console.log('Authenticated successfully.');
+            usernameDisplay.textContent = `Welcome, ${data.username}!`;
+            userProfilePic.src = data.profilePic || 'default-avatar.png';
+            showLobby();
         });
 
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('username');
-            currentUsername = null;
-            socket.disconnect();
-            window.location.reload();
+        socket.on('leaderboardUpdate', (leaderboard) => {
+            leaderboardList.innerHTML = leaderboard.map(user =>
+                `<li><img src="${user.profilePic}" alt="${user.username}" class="profile-pic" style="width:25px;height:25px;"><span>${user.username}</span><span>${user.totalScore}</span></li>`
+            ).join('');
         });
 
-        createRoomBtn.addEventListener('click', () => {
-            const username = usernameInput.value.trim();
-            if (!username) {
-                 Swal.fire({ icon: 'warning', text: 'Please enter a username first.' });
+        socket.on('publicRoomsUpdate', (rooms) => {
+            if (rooms.length === 0) {
+                publicRoomsList.innerHTML = '<li>No public rooms available. Create one!</li>';
                 return;
             }
-            currentUsername = username;
-            localStorage.setItem('username', currentUsername);
-            const roomName = prompt("Enter room name (optional):");
-            socket.emit('createRoom', currentUsername, roomName, (response) => {
-                if (response.success) {
-                    currentRoomId = response.roomId;
-                    showRoom();
-                    if (profilePicDataUrl) sendProfileData();
-                } else {
-                     displayError(response.message)
+            publicRoomsList.innerHTML = rooms.map(r => `
+                <li>
+                    <span>${r.name} (${r.playerCount}/${r.maxPlayers})</span>
+                    <button class="button join-btn-small" data-roomid="${r.id}">Join</button>
+                </li>
+            `).join('');
+        });
+
+        socket.on('roomInfo', (data) => {
+            roomNameDisplay.textContent = data.roomName;
+            roomIdDisplay.textContent = data.roomId;
+            playersList.innerHTML = data.users.map(user =>
+                `<li><img src="${user.profilePic}" alt="${user.username}" class="profile-pic"><span>${user.username}</span><span>Score: ${user.score}</span></li>`
+            ).join('');
+        });
+
+        socket.on('disconnect', () => {
+            displayError('You have been disconnected. Please login again.');
+            setTimeout(() => window.location.href = '/', 2000);
+        });
+
+        logoutBtn.addEventListener('click', () => window.location.href = '/logout');
+
+        createRoomBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('https://opentdb.com/api_category.php');
+                if (!response.ok) throw new Error('Failed to fetch categories');
+                const data = await response.json();
+                const categories = data.trivia_categories;
+
+                const categoryOptions = categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+
+                const { value: formValues } = await Swal.fire({
+                    title: 'Create a New Room',
+                    html:
+                        '<input id="swal-room-name" class="swal2-input" placeholder="Room Name (optional)">' +
+                        `<select id="swal-category" class="swal2-select"><option value="">Any Category</option>${categoryOptions}</select>` +
+                        '<select id="swal-difficulty" class="swal2-select">' +
+                            '<option value="">Any Difficulty</option>' +
+                            '<option value="easy">Easy</option>' +
+                            '<option value="medium">Medium</option>' +
+                            '<option value="hard">Hard</option>' +
+                        '</select>',
+                    focusConfirm: false,
+                    preConfirm: () => {
+                        return {
+                            roomName: document.getElementById('swal-room-name').value,
+                            category: document.getElementById('swal-category').value,
+                            difficulty: document.getElementById('swal-difficulty').value
+                        }
+                    }
+                });
+
+                if (formValues) {
+                    socket.emit('createRoom', formValues, (response) => {
+                        if (response.success) {
+                            showRoom(response.roomId);
+                        } else {
+                            displayError(response.message);
+                        }
+                    });
                 }
-            });
+            } catch (error) {
+                console.error('Error creating room:', error);
+                displayError('Could not load room creation options. Please try again.');
+            }
         });
 
         joinRoomBtn.addEventListener('click', () => {
-            const username = usernameInput.value.trim();
-             if (!username) {
-                Swal.fire({ icon: 'warning', text: 'Please enter a username first.' });
-                return;
-            }
-            currentUsername = username;
-            localStorage.setItem('username', currentUsername);
             const roomId = roomIdInput.value.trim().toUpperCase();
             if (roomId) {
-                socket.emit('joinRoom', roomId, currentUsername, (response) => {
-                    if (response.success) {
-                        currentRoomId = roomId;
-                        showRoom();
-                        if (profilePicDataUrl) sendProfileData();
-                    } else {
-                         displayError(response.message)
-                    }
+                socket.emit('joinRoom', roomId, (response) => {
+                    if (response.success) showRoom(roomId);
+                    else displayError(response.message);
                 });
-            }else{
-                 Swal.fire({ icon: 'warning', text: 'Silahkan masukkan id room.' });
+            } else {
+                Swal.fire({ icon: 'warning', text: 'Please enter a room ID.' });
             }
         });
 
-        answersContainer.addEventListener('click', (event) => {
-            if (event.target.classList.contains('answer-button') && !hasAnswered) {
-                hasAnswered = true;
-                disableAnswerButtons();
-                const answerIndex = parseInt(event.target.dataset.index);
-                socket.emit('answerQuestion', answerIndex, (response) => {
-                     if(response.success){
-                        if(response.correct){
-                             Swal.fire({ icon: 'success', title: 'Correct!', text: `Your score: ${response.score}`, timer: 1500, showConfirmButton: false })
-                        } else {
-                             Swal.fire({ icon: 'error', title: 'Incorrect!', text: `Your score: ${response.score}`, timer: 1500, showConfirmButton: false })
-                        }
-                     } else {
-                         displayError(response.message)
-                     }
+        publicRoomsList.addEventListener('click', (event) => {
+            if (event.target.classList.contains('join-btn-small')) {
+                const roomId = event.target.dataset.roomid;
+                socket.emit('joinRoom', roomId, (response) => {
+                    if (response.success) showRoom(roomId);
+                    else displayError(response.message);
                 });
             }
         });
@@ -444,187 +222,7 @@
             showLobby();
         });
 
-        restartBtn.addEventListener('click', () => {
-            socket.emit('restartGame');
-        });
-
-        sendMessageBtn.addEventListener('click', () => {
-            const message = chatInput.value;
-            if (message.trim()) {
-                socket.emit('chatMessage', message);
-                chatInput.value = '';
-            }
-        });
-
-        backToLobbyBtn.addEventListener('click',() => {
-            showLobby();
-        })
-        let isRoomInfoReceived = false;
-        // --- Socket.IO Event Listeners ---
-        socket.on('roomInfo', (data) => {
-            roomNameDisplay.textContent = data.roomName;
-            roomIdDisplay.textContent = data.roomId;
-            playersList.innerHTML = data.users.map(user => `<li><img src="${user.profilePic || 'default-avatar.png'}" alt="Profile Pic" class="profile-pic"><span>${user.username}</span><span>${user.score}</span></li>`).join('');
-
-            //Hapus kode yang berhubungan dengan progress bar
-
-            // if (data.currentQuestionIndex === 1) { //Jalankan hanya sekali, setelah join room
-            //     setTimeout(() => displayQuestion(data.questions ? data.questions[0] : null), 500);
-            // }
-              if (!isRoomInfoReceived) {
-                isRoomInfoReceived = true; // Set flag menjadi true
-                if (data.currentQuestionIndex === 1) {
-                    setTimeout(() => {
-                        displayQuestion(data.questions ? data.questions[0] : null);
-                    }, 500); // Tunda 0.5 detik, sesuaikan
-                }
-            }
-        });
-
-        socket.on('nextQuestion', (question) => {
-            hasAnswered = false;
-            questionStartTime = null; // Reset waktu mulai
-            setTimeout(() => displayQuestion(question), 500);
-            Swal.close();
-        });
-
-        socket.on('gameOver', (scores) => {
-            const myScore = scores.find(user => user.username === currentUsername);
-            const highestScore = Math.max(...scores.map(user => user.score));
-             if(myScore && myScore.score === highestScore){
-                Swal.fire({ icon: 'success', title: 'Congratulations!', text: 'kamu menang!' });
-            } else {
-                Swal.fire({ icon: 'error', title: 'Game Over!', text: 'kamu kalah!' });
-            }
-            finalScoresDisplay.innerHTML = scores.map(user => `<li>${user.username} : ${user.score}</li>`).join('');
-            showGameOver();
-        });
-
-        socket.on('gameRestarted', (question) => {
-            showRoom();
-             hasAnswered = false;
-            questionStartTime = null; // Reset waktu mulai
-            setTimeout(() => displayQuestion(question), 500);
-             Swal.close();
-        });
-
-        socket.on('leaderboardUpdate', (leaderboard) => {
-            leaderboardList.innerHTML = leaderboard.map(user => `<li><img src="${user.profilePic || 'default-avatar.png'}" alt="Profile Pic" class="profile-pic"><span>${user.username}</span><span>${user.score}</span></li>`).join('');
-        });
-
-        socket.on('chatMessage', (data) => {
-             const messageElement = document.createElement('div');
-            messageElement.innerHTML = `<strong>${data.username}:</strong> ${data.message} <small>(${data.timestamp.toLocaleString()})</small>`;
-            chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        });
-
-        socket.on('profileUpdated', (data) => {
-            if (users[data.userId] && users[data.userId].username === currentUsername) {
-                profilePicDataUrl = data.profilePic;
-                updateProfilePreview();
-            }
-            const playerListItem = playersList.querySelector(`li:has(span:first-child:contains(${users[data.userId].username}))`);
-            if (playerListItem) {
-                playerListItem.querySelector('img').src = data.profilePic;
-            }
-        });
-
-        socket.on('error', (message) => displayError(message));
-
-        // --- Functions ---
-        function showLobby() {
-             lobby.style.display = 'block';
-            room.style.display = 'none';
-            gameOver.style.display = 'none';
-            currentRoomId = null;
-            clearQuestion();
-             updateProfilePreview();
-        }
-
-        function showRoom() {
-             lobby.style.display = 'none';
-            room.style.display = 'block';
-            gameOver.style.display = 'none';
-        }
-
-        function showGameOver() {
-            lobby.style.display = 'none';
-            room.style.display = 'none';
-            gameOver.style.display = 'block';
-            clearQuestion();
-        }
-
-      async function displayQuestion(question) {
-        if (!question) return;
-
-        questionStartTime = Date.now(); // Simpan waktu mulai, TAPI tidak untuk animasi
-
-        try {
-            const translatedQuestion = await translate(question.question, { to: 'id' });
-            questionText.innerHTML = translatedQuestion.text;
-            const translatedAnswers = await Promise.all(question.answers.map(async (answer) => (await translate(answer, { to: 'id' })).text));
-            answersContainer.innerHTML = translatedAnswers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
-            enableAnswerButtons();
-            speak(translatedQuestion.text); // Panggil setelah terjemahan SELESAI
-        } catch (error) {
-            console.error("Translation error:", error);
-            questionText.innerHTML = question.question;
-            answersContainer.innerHTML = question.answers.map((answer, index) => `<button class="answer-button" data-index="${index}">${answer}</button>`).join('');
-            enableAnswerButtons();
-            speak(question.question); // Panggil setelah terjemahan SELESAI
-        }
-    }
-
-        function clearQuestion() {
-            questionText.textContent = "";
-            answersContainer.innerHTML = "";
-            //  stopProgressBarAnimation(); //Tidak perlu lagi
-            questionStartTime = null; // Reset waktu mulai
-        }
-
-       function disableAnswerButtons() {
-            document.querySelectorAll('.answer-button').forEach(button => button.disabled = true);
-        }
-
-        function enableAnswerButtons() {
-            document.querySelectorAll('.answer-button').forEach(button => button.disabled = false);
-        }
-
-        function displayError(message){
-            Swal.fire({ icon: 'error', title: 'Oops...', text: message })
-        }
-
-        let currentSpeakText = null;
-        function speak(text) {
-            if ('speechSynthesis' in window ) {
-                    const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.lang = 'id-ID';
-                     const voices = window.speechSynthesis.getVoices();
-                    const femaleVoice = voices.find(voice => voice.lang === 'id-ID' && voice.name.toLowerCase().includes('female'));
-                    if (femaleVoice) {
-                        utterance.voice = femaleVoice;
-                    }
-                    window.speechSynthesis.cancel(); // Hentikan yang sebelumnya (penting)
-                    window.speechSynthesis.speak(utterance);
-
-            } else {
-                console.warn('Text-to-speech not supported.');
-            }
-        }
-
-        function sendProfileData() {
-            socket.emit('updateProfile', {profilePic: profilePicDataUrl});
-        }
-
-        function updateProfilePreview() {
-            if (profilePicDataUrl) {
-                profilePicLabel.innerHTML = `<img src="${profilePicDataUrl}" alt="Profile Pic" class="profile-pic">`;
-                profilePicPreview.src = profilePicDataUrl;
-                profilePicPreview.style.display = 'block';
-            }
-        }
-
+        socket.connect();
     </script>
 </body>
 </html>

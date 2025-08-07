@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Wanzofc Quiz</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #app {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: #2e86de;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .button {
+            background-color: #2e86de;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            display: inline-block;
+            font-size: 1.1em;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #1b4f72;
+        }
+        .button-secondary {
+            background-color: #6c757d;
+        }
+        .button-secondary:hover {
+            background-color: #5a6268;
+        }
+        footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        footer a {
+            margin: 0 10px;
+            color: #6c757d;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1><i class="fas fa-gamepad"></i> Welcome to Wanzofc Quiz</h1>
+        <p>Join the fun, challenge your friends, and test your knowledge!</p>
+        <div>
+            <a href="/login.html" class="button"><i class="fas fa-sign-in-alt"></i> Login</a>
+            <a href="/register.html" class="button button-secondary"><i class="fas fa-user-plus"></i> Register</a>
+        </div>
+        <footer>
+            <a href="/how-to-play.html">How to Play</a>
+            <a href="/about.html">About</a>
+        </footer>
+    </div>
+</body>
+</html>
