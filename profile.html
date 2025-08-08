@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Wanzofc Quiz</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #app { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 90%; max-width: 500px; text-align: center; }
+        h1 { color: #2e86de; margin-bottom: 20px; }
+        .profile-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; }
+        .profile-pic { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #2e86de; margin-bottom: 10px; }
+        #username-display { font-size: 1.5em; font-weight: bold; }
+        .stats-container { text-align: left; }
+        .stat { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; }
+        .stat:last-child { border-bottom: none; }
+        .stat-label { font-weight: bold; color: #555; }
+        .stat-value { color: #2e86de; font-weight: bold; }
+        .button { background-color: #6c757d; color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; margin-top: 30px; font-size: 1em; text-decoration: none; transition: background-color 0.3s ease; }
+        .button:hover { background-color: #5a6268; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="profile-header">
+            <img id="profile-pic-display" src="default-avatar.png" alt="Profile Picture" class="profile-pic">
+            <h1 id="username-display">Loading...</h1>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat">
+                <span class="stat-label"><i class="fas fa-star"></i> Total Score</span>
+                <span id="total-score" class="stat-value">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label"><i class="fas fa-gamepad"></i> Games Played</span>
+                <span id="games-played" class="stat-value">0</span>
+            </div>
+        </div>
+
+        <a href="/game" class="button"><i class="fas fa-arrow-left"></i> Back to Game</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/api/profile');
+                if (!response.ok) {
+                    // If not authenticated, the server middleware should have redirected.
+                    // This handles other errors.
+                    throw new Error('Could not fetch profile data.');
+                }
+                const data = await response.json();
+
+                document.getElementById('username-display').textContent = data.username;
+                document.getElementById('profile-pic-display').src = data.profilePic || 'default-avatar.png';
+                document.getElementById('total-score').textContent = data.totalScore;
+                document.getElementById('games-played').textContent = data.gamesPlayed;
+
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+                document.getElementById('app').innerHTML = '<h1>Error loading profile. Please <a href="/login.html">login</a> again.</h1>';
+            }
+        });
+    </script>
+</body>
+</html>
