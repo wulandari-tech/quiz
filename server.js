@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3001;
 
 // --- DATABASE CONNECTION ---
 // Ganti dengan string koneksi MongoDB Anda. Sebaiknya gunakan variabel lingkungan.
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/wanzofc-quiz';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://zanssxploit:pISqUYgJJDfnLW9b@cluster0.fgram.mongodb.net/scmarketdb?retryWrites=true&w=majority';
 mongoose.connect(MONGO_URI)
     .then(() => console.log('MongoDB connected successfully.'))
     .catch(err => console.error('MongoDB connection error:', err));
